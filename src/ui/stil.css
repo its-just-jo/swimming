@@ -1,0 +1,58 @@
+/*
+ * Gestaltung nach Abschnitt 8: nuechtern und dicht, ein Analysewerkzeug.
+ * Keine Verlaufsfarben, keine Erfolgsfarben, keine dekorativen Elemente.
+ *
+ * Schrift: reiner Systemstack. Externe Fonts sind zur Laufzeit ausgeschlossen,
+ * deshalb kommt der Tabellensatz ueber font-variant-numeric: tabular-nums —
+ * das liefert gleichbreite Ziffern ohne jede Netzwerkabhaengigkeit.
+ */
+
+:root {
+  --grund: #fbfbfa;
+  --flaeche: #ffffff;
+  --linie: #d8d6d1;
+  --text: #1c1b19;
+  --text-leise: #6b6862;
+  --warnung: #8c2f2f;   /* gedecktes Rot */
+  --grenzwert: #8a6320; /* Bernstein */
+  --raster: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.zahl,
+table td,
+table th {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.raster {
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) 1fr;
+  gap: calc(var(--raster) * 3);
+  padding: calc(var(--raster) * 2);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .raster { grid-template-columns: 1fr; }
+  .kennzahlenleiste { position: sticky; top: 0; z-index: 10; }
+}
+
+.warnung--kritisch { color: var(--warnung); border-left: 3px solid var(--warnung); }
+.warnung--grenzwert { color: var(--grenzwert); border-left: 3px solid var(--grenzwert); }
+
+.rechtshinweis {
+  border-top: 1px solid var(--linie);
+  padding: calc(var(--raster) * 2);
+  color: var(--text-leise);
+  font-size: 12px;
+}
