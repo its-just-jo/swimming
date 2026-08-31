@@ -27,6 +27,30 @@ export function berechneGewerbesteuer(eingabe: {
   anrechenbareEinkommensteuer: Euro;
   rg: Rechtsgroessen;
 }): GewerbesteuerErgebnis {
-  void eingabe;
-  throw new Error('berechneGewerbesteuer: nicht implementiert');
+  const { gewinn, hebesatz, anrechenbareEinkommensteuer, rg } = eingabe;
+
+  // § 11 Abs. 1 Satz 3 Nr. 1 GewStG: Abrundung auf volle 100 EUR.
+  const gewerbeertrag = Math.floor(Math.max(0, gewinn) / 100) * 100;
+  const nachFreibetrag = Math.max(0, gewerbeertrag - rg.gewerbesteuerFreibetrag);
+  const messbetrag = nachFreibetrag * rg.gewerbesteuerMesszahl;
+  const gewerbesteuer = messbetrag * (hebesatz / 100);
+  const anrechnungsvolumen = messbetrag * rg.gewerbesteuerAnrechnungsfaktor;
+
+  // § 35 EStG: doppelt begrenzt — auf das 4,0-fache des Messbetrags UND auf
+  // die tatsaechlich gezahlte Gewerbesteuer UND auf die anrechenbare ESt.
+  const tatsaechlicheAnrechnung = Math.max(
+    0,
+    Math.min(anrechnungsvolumen, gewerbesteuer, anrechenbareEinkommensteuer),
+  );
+  const nettobelastung = gewerbesteuer - tatsaechlicheAnrechnung;
+
+  return {
+    gewerbeertrag,
+    nachFreibetrag,
+    messbetrag,
+    gewerbesteuer,
+    anrechnungsvolumen,
+    tatsaechlicheAnrechnung,
+    nettobelastung,
+  };
 }

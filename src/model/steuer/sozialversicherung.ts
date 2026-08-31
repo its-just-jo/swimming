@@ -19,6 +19,11 @@
 import type { Rechtsgroessen } from '../konstanten';
 import type { Euro, KvStatus, SozialversicherungErgebnis, Stunden } from '../typen';
 
+/** Rundet auf den vollen Cent — Beitraege werden in der Lohnabrechnung centgenau ausgewiesen. */
+function rundeCent(betrag: number): number {
+  return Math.round(betrag * 100) / 100;
+}
+
 /** Arbeitnehmeranteile aus dem Arbeitsentgelt, je Zweig mit eigener BBG. */
 export function svBeitraegeArbeitnehmer(eingabe: {
   bruttolohn: Euro;
@@ -27,8 +32,46 @@ export function svBeitraegeArbeitnehmer(eingabe: {
   kinderlosZuschlagPflege: boolean;
   rg: Rechtsgroessen;
 }): SozialversicherungErgebnis {
-  void eingabe;
-  throw new Error('svBeitraegeArbeitnehmer: nicht implementiert');
+  const { bruttolohn, kvStatus, pkvBeitragProMonat, kinderlosZuschlagPflege, rg } = eingabe;
+
+  const bemessungKvPv = Math.min(bruttolohn, rg.bbgKvPv);
+  const bemessungRvAlv = Math.min(bruttolohn, rg.bbgRvAlv);
+
+  const pvArbeitnehmer = rundeCent(
+    bemessungKvPv * (rg.pvSatz / 2 + (kinderlosZuschlagPflege ? rg.pvKinderlosZuschlag : 0)),
+  );
+  const rvArbeitnehmer = rundeCent(bemessungRvAlv * (rg.rvSatz / 2));
+  const alvArbeitnehmer = rundeCent(bemessungRvAlv * (rg.alvSatz / 2));
+
+  let kvArbeitnehmer: number;
+  let pkvArbeitgeberzuschuss = 0;
+  if (kvStatus === 'pkv') {
+    const gkvHoechstbeitragHalbe =
+      (rg.bbgKvPv * (rg.kvAllgemeinerSatz + rg.kvZusatzbeitragDurchschnitt)) / 2;
+    const pkvJahresbeitrag = pkvBeitragProMonat * 12;
+    pkvArbeitgeberzuschuss = rundeCent(Math.min(pkvJahresbeitrag / 2, gkvHoechstbeitragHalbe));
+    kvArbeitnehmer = rundeCent(pkvJahresbeitrag - pkvArbeitgeberzuschuss);
+  } else {
+    kvArbeitnehmer = rundeCent(
+      bemessungKvPv * (rg.kvAllgemeinerSatz / 2 + rg.kvZusatzbeitragDurchschnitt / 2),
+    );
+  }
+
+  const gesamtArbeitnehmer = rundeCent(
+    kvArbeitnehmer + pvArbeitnehmer + rvArbeitnehmer + alvArbeitnehmer,
+  );
+
+  return {
+    kvArbeitnehmer,
+    pvArbeitnehmer,
+    rvArbeitnehmer,
+    alvArbeitnehmer,
+    gesamtArbeitnehmer,
+    kvAufSelbstaendigkeit: 0,
+    beitragsbemessungsgrenzeErreicht: bruttolohn >= rg.bbgKvPv,
+    ueberJaeg: bruttolohn > rg.jaeg,
+    pkvArbeitgeberzuschuss,
+  };
 }
 
 /**
@@ -43,8 +86,18 @@ export function kvAufSelbstaendigkeit(eingabe: {
   hauptberuflichSelbstaendig: boolean;
   rg: Rechtsgroessen;
 }): Euro {
-  void eingabe;
-  throw new Error('kvAufSelbstaendigkeit: nicht implementiert');
+  const { bruttolohn, gewinn, kvStatus, hauptberuflichSelbstaendig, rg } = eingabe;
+
+  if (kvStatus === 'pkv') return 0;
+  if (kvStatus === 'gkv_pflicht' && !hauptberuflichSelbstaendig) return 0;
+  if (gewinn <= 0) return 0;
+
+  // gkv_freiwillig sowie gkv_pflicht bei Hauptberuflichkeit: die
+  // Selbststaendigkeit traegt den vollen Beitragssatz (kein Arbeitgeberanteil)
+  // auf den noch nicht durch das Arbeitsentgelt ausgeschoepften Teil der BBG.
+  const restraum = Math.max(0, rg.bbgKvPv - bruttolohn);
+  const bemessung = Math.min(gewinn, restraum);
+  return rundeCent(bemessung * (rg.kvAllgemeinerSatz + rg.kvZusatzbeitragDurchschnitt));
 }
 
 /**
@@ -59,6 +112,8 @@ export function istHauptberuflichSelbstaendig(eingabe: {
   gewinn: Euro;
   bruttolohn: Euro;
 }): { hauptberuflich: boolean; grundZeit: boolean; grundEinkommen: boolean } {
-  void eingabe;
-  throw new Error('istHauptberuflichSelbstaendig: nicht implementiert');
+  const { stundenSelbstaendigkeit, stundenAnstellung, gewinn, bruttolohn } = eingabe;
+  const grundZeit = stundenSelbstaendigkeit > stundenAnstellung;
+  const grundEinkommen = gewinn > bruttolohn;
+  return { hauptberuflich: grundZeit || grundEinkommen, grundZeit, grundEinkommen };
 }

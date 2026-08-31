@@ -28,6 +28,40 @@ export function berechneDrvBeitrag(eingabe: {
   monatImHorizont: MonatsIndex;
   rg: Rechtsgroessen;
 }): DrvErgebnis {
-  void eingabe;
-  throw new Error('berechneDrvBeitrag: nicht implementiert');
+  const {
+    gewinn,
+    bruttolohn,
+    drvPflicht,
+    befreiungExistenzgruender,
+    befreiungBisMonat,
+    monatImHorizont,
+    rg,
+  } = eingabe;
+
+  if (!drvPflicht) {
+    return { pflichtig: false, befreiungsgrund: 'abgeschaltet', bemessungsgrundlage: 0, beitrag: 0 };
+  }
+
+  // Bemessungsgrundlage: der Gewinn, gedeckelt auf die BBG RV/ALV abzueglich
+  // des bereits durch die Anstellung ausgeschoepften Teils. Ein Verlust
+  // erzeugt keinen negativen Beitrag.
+  const restraumBbg = Math.max(0, rg.bbgRvAlv - Math.min(bruttolohn, rg.bbgRvAlv));
+  const bemessungsgrundlage = Math.max(0, Math.min(gewinn, restraumBbg));
+
+  if (befreiungExistenzgruender && monatImHorizont < befreiungBisMonat) {
+    return {
+      pflichtig: false,
+      befreiungsgrund: 'existenzgruender',
+      bemessungsgrundlage,
+      beitrag: 0,
+    };
+  }
+
+  const geringfuegigkeitsgrenzeJahr = rg.geringfuegigkeitsgrenzeMonat * 12;
+  if (gewinn < geringfuegigkeitsgrenzeJahr) {
+    return { pflichtig: false, befreiungsgrund: 'geringfuegig', bemessungsgrundlage, beitrag: 0 };
+  }
+
+  const beitrag = Math.round(bemessungsgrundlage * rg.rvSatz * 100) / 100;
+  return { pflichtig: true, befreiungsgrund: null, bemessungsgrundlage, beitrag };
 }
