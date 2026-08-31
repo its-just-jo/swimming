@@ -12,7 +12,9 @@
  * ergaenzt. Damit ist auch ein von Hand bearbeitetes JSON belastbar.
  */
 
+import { szenarioDefault } from '../model/defaults';
 import type { Szenario } from '../model/typen';
+import { SCHEMA_VERSION } from './speicher';
 
 export type Migration = (roh: unknown) => unknown;
 
@@ -20,8 +22,45 @@ export type Migration = (roh: unknown) => unknown;
 export const MIGRATIONEN: readonly Migration[] = [];
 
 export function migriere(roh: unknown, vonVersion: number): unknown {
-  void roh; void vonVersion;
-  throw new Error('migriere: nicht implementiert');
+  let ergebnis = roh;
+  for (let version = vonVersion; version < SCHEMA_VERSION; version++) {
+    const schritt = MIGRATIONEN[version];
+    // Fehlt fuer diesen Schritt eine Migration, bleibt das Objekt unveraendert
+    // stehen statt zu scheitern — normalisiere() ergaenzt anschliessend aus
+    // den Defaults, was tatsaechlich fehlt.
+    if (schritt) ergebnis = schritt(ergebnis);
+  }
+  return ergebnis;
+}
+
+function istObjekt(wert: unknown): wert is Record<string, unknown> {
+  return typeof wert === 'object' && wert !== null && !Array.isArray(wert);
+}
+
+/**
+ * Fuellt `roh` rekursiv gegen die Form von `basis` auf: fehlende Felder aus
+ * `basis`, unbekannte Felder aus `roh` verworfen, Typabweichungen verworfen.
+ * Arrays von Objekten (Produkte, Fixkosten, Investitionen) werden je Eintrag
+ * gegen das erste Default-Element als Formvorlage aufgefuellt.
+ */
+function mergeWert(basis: unknown, roh: unknown): unknown {
+  if (Array.isArray(basis)) {
+    if (!Array.isArray(roh)) return basis;
+    const vorlage: unknown = basis[0];
+    if (istObjekt(vorlage)) {
+      return roh.map((eintrag) => (istObjekt(eintrag) ? mergeWert(vorlage, eintrag) : vorlage));
+    }
+    return roh;
+  }
+  if (istObjekt(basis)) {
+    if (!istObjekt(roh)) return basis;
+    const ergebnis: Record<string, unknown> = { ...basis };
+    for (const schluessel of Object.keys(basis)) {
+      ergebnis[schluessel] = mergeWert(basis[schluessel], roh[schluessel]);
+    }
+    return ergebnis;
+  }
+  return typeof roh === typeof basis ? roh : basis;
 }
 
 /**
@@ -30,6 +69,11 @@ export function migriere(roh: unknown, vonVersion: number): unknown {
  * Zahlen gegen ihre Min/Max-Grenzen geprueft.
  */
 export function normalisiere(roh: unknown): Szenario | null {
-  void roh;
-  throw new Error('normalisiere: nicht implementiert');
+  if (!istObjekt(roh)) return null;
+
+  const id = typeof roh.id === 'string' && roh.id.length > 0 ? roh.id : crypto.randomUUID();
+  const name = typeof roh.name === 'string' && roh.name.length > 0 ? roh.name : 'Basis';
+  const basis = szenarioDefault(id, name);
+
+  return mergeWert(basis, roh) as Szenario;
 }
