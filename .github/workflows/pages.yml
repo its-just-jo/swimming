@@ -49,38 +49,12 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # Der Rechenkern ist noch nicht implementiert; die Tests sind bewusst rot
-      # und dienen als ausführbare Spezifikation (siehe UMSETZUNG.md, AP 1–11).
-      # Sie laufen sichtbar mit, blockieren aber vorerst nicht.
-      #
-      # TODO: `continue-on-error` entfernen, sobald AP 11 abgenommen ist. Ab
-      # diesem Zeitpunkt muss ein roter Test das Deployment verhindern.
+      # AP 11 ist abgenommen: der Rechenkern ist vollständig implementiert,
+      # die Tests sind die ausführbare Spezifikation (siehe UMSETZUNG.md) und
+      # blockieren das Deployment ab jetzt bei Rot — kein `continue-on-error`
+      # mehr.
       - name: Tests
-        id: tests
-        continue-on-error: true
         run: npm test
-
-      - name: Teststatus zusammenfassen
-        run: |
-          {
-            echo "## Testlauf"
-            echo
-            if [ "${{ steps.tests.outcome }}" = "success" ]; then
-              echo "Alle Tests grün."
-              echo
-              echo "Falls der Rechenkern inzwischen vollständig implementiert ist:"
-              echo "\`continue-on-error\` im Schritt \"Tests\" entfernen, damit rote"
-              echo "Tests künftig das Deployment verhindern."
-            else
-              echo "Tests rot — **erwartet**, solange der Rechenkern nicht implementiert ist."
-              echo
-              echo "Die Tests sind die ausführbare Spezifikation des Rechenkerns"
-              echo "(siehe \`UMSETZUNG.md\`, Arbeitspakete 1–11). Sie blockieren das"
-              echo "Deployment absichtlich noch nicht."
-              echo
-              echo "Erwartungswerte nicht anpassen, um Tests grün zu bekommen."
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
         run: npm run build
