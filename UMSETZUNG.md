@@ -166,9 +166,16 @@ Bereich und global.
 ## Phase 4 — Lieferung
 
 ### AP 17 · README, Beispiel-JSON, Deploy
-`README.md` mit Setup und Deploy-Anleitung (vorhanden, bei Bedarf ergänzen),
-`beispiel-szenario.json` gegen die fertige Export-Funktion erneuern, GitHub-Pages-Workflow.
-Rechtshinweis im Fußbereich bleibt dauerhaft sichtbar und darf nicht ausblendbar sein.
+`README.md` mit Setup- und Deploy-Anleitung sowie der GitHub-Pages-Workflow
+(`.github/workflows/pages.yml`) sind **fertig**. Offen bleibt:
+
+- `beispiel-szenario.json` gegen die fertige Export-Funktion erneuern (derzeit aus den
+  Defaults erzeugt, Schema stimmt bereits).
+- Im Pages-Workflow `continue-on-error: true` im Schritt *Tests* entfernen, sobald AP 11
+  abgenommen ist. Ab dann muss ein roter Test das Deployment verhindern.
+- Sobald nach `main` zusammengeführt wurde: den Branch
+  `claude/spec-analysis-architecture-lljhu6` aus dem Push-Trigger entfernen.
+- Rechtshinweis im Fußbereich bleibt dauerhaft sichtbar und darf nicht ausblendbar sein.
 
 ---
 

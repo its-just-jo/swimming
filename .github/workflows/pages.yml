@@ -1,0 +1,110 @@
+# Veröffentlichung als GitHub Pages.
+#
+# Der Build ist vollständig statisch: `base: './'` in vite.config.ts erzeugt
+# relative Asset-Pfade, damit läuft die Seite unter
+# https://<user>.github.io/<repo>/ ohne weitere Konfiguration.
+#
+# EINMALIGE EINRICHTUNG (nicht automatisierbar):
+# Repository → Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# Ohne diese Einstellung schlägt der Schritt "deploy-pages" fehl.
+
+name: GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      # Derzeit der Default-Branch des Repositorys — es gibt noch kein `main`.
+      # Diese Zeile entfernen, sobald nach `main` zusammengeführt wurde.
+      - claude/spec-analysis-architecture-lljhu6
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Laufende Deployments nicht abbrechen: ein halb abgeschlossenes Pages-Deployment
+# hinterlässt sonst eine kaputte Seite.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pruefen:
+    name: Prüfen und bauen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Der Rechenkern ist noch nicht implementiert; die Tests sind bewusst rot
+      # und dienen als ausführbare Spezifikation (siehe UMSETZUNG.md, AP 1–11).
+      # Sie laufen sichtbar mit, blockieren aber vorerst nicht.
+      #
+      # TODO: `continue-on-error` entfernen, sobald AP 11 abgenommen ist. Ab
+      # diesem Zeitpunkt muss ein roter Test das Deployment verhindern.
+      - name: Tests
+        id: tests
+        continue-on-error: true
+        run: npm test
+
+      - name: Teststatus zusammenfassen
+        run: |
+          {
+            echo "## Testlauf"
+            echo
+            if [ "${{ steps.tests.outcome }}" = "success" ]; then
+              echo "Alle Tests grün."
+              echo
+              echo "Falls der Rechenkern inzwischen vollständig implementiert ist:"
+              echo "\`continue-on-error\` im Schritt \"Tests\" entfernen, damit rote"
+              echo "Tests künftig das Deployment verhindern."
+            else
+              echo "Tests rot — **erwartet**, solange der Rechenkern nicht implementiert ist."
+              echo
+              echo "Die Tests sind die ausführbare Spezifikation des Rechenkerns"
+              echo "(siehe \`UMSETZUNG.md\`, Arbeitspakete 1–11). Sie blockieren das"
+              echo "Deployment absichtlich noch nicht."
+              echo
+              echo "Erwartungswerte nicht anpassen, um Tests grün zu bekommen."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build
+        run: npm run build
+
+      - name: Pages konfigurieren
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+
+      - name: Artefakt hochladen
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  veroeffentlichen:
+    name: Veröffentlichen
+    # Pull Requests werden nur geprüft, nicht veröffentlicht.
+    if: github.event_name != 'pull_request'
+    needs: pruefen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Nach GitHub Pages veröffentlichen
+        id: deployment
+        uses: actions/deploy-pages@v4
