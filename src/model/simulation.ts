@@ -34,6 +34,7 @@ import { lehrauftragEinkuenfte } from './lehre';
 import { berechneProdukt } from './produkte';
 import { berechneRentenwirkung } from './rente';
 import { kleinunternehmerVerlauf } from './steuer/umsatzsteuer';
+import { ermittleWarnungen } from './warnungen';
 import type {
   Anstellung,
   Ergebnis,
@@ -45,7 +46,7 @@ import type {
 } from './typen';
 import { berechneZeitbudget, mittlereTerminlaenge } from './zeitbudget';
 
-function rechtsgroessenFuerSzenario(szenario: Szenario): Rechtsgroessen {
+export function rechtsgroessenFuerSzenario(szenario: Szenario): Rechtsgroessen {
   return mitUeberschreibungen(
     rechtsgroessenFuer(szenario.simulation.rechtsstand),
     szenario.rechtlicheUeberschreibungen,
@@ -53,7 +54,7 @@ function rechtsgroessenFuerSzenario(szenario: Szenario): Rechtsgroessen {
 }
 
 /** Anstellung des Jahres — durch die Professur ersetzt, sobald sie aktiv ist. */
-function anstellungEffektivImJahr(szenario: Szenario, jahrIndex: number): Anstellung {
+export function anstellungEffektivImJahr(szenario: Szenario, jahrIndex: number): Anstellung {
   const { anstellung, lehre } = szenario;
   const professurAktivDiesesJahr = lehre.professurAktiv && jahrIndex >= lehre.professurStartjahr;
   if (!professurAktivDiesesJahr) return anstellung;
@@ -347,5 +348,6 @@ export function berechneSzenario(szenario: Szenario): Ergebnis {
     return { ...m, kumuliert: laufend };
   });
 
-  return { szenarioId: szenario.id, jahre, monate, warnungen: [] };
+  const zwischenergebnis: Ergebnis = { szenarioId: szenario.id, jahre, monate, warnungen: [] };
+  return { ...zwischenergebnis, warnungen: ermittleWarnungen(szenario, zwischenergebnis) };
 }
