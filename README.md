@@ -60,10 +60,6 @@ Der Workflow gliedert sich in zwei Jobs:
 AP 11 ist abgenommen: der Rechenkern ist vollständig implementiert, ein roter Test
 verhindert das Deployment.
 
-Der Trigger enthält neben `main` derzeit noch den Branch
-`claude/spec-analysis-architecture-lljhu6`, weil das Repository bislang keinen
-`main`-Branch hat. Diese Zeile entfernen, sobald nach `main` zusammengeführt wurde.
-
 ### Beliebiger Webspace
 
 `npm run build`, dann den Inhalt von `dist/` hochladen. Kein Server, keine Datenbank.

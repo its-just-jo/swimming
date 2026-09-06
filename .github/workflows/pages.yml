@@ -14,9 +14,6 @@ on:
   push:
     branches:
       - main
-      # Derzeit der Default-Branch des Repositorys — es gibt noch kein `main`.
-      # Diese Zeile entfernen, sobald nach `main` zusammengeführt wurde.
-      - claude/spec-analysis-architecture-lljhu6
   pull_request:
   workflow_dispatch:
 
