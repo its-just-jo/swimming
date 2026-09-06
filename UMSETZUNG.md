@@ -183,3 +183,17 @@ Bereich und global.
 
 Login, Mehrbenutzerfähigkeit, Backend, Datenbank, PDF-Export, Buchhaltungsfunktionen,
 Teilnehmerverwaltung, Steuerberatung.
+
+---
+
+## Phase 5 — Bedienung und Gestaltung (AP 18–28)
+
+Die Arbeitspakete dieser Phase stehen vollständig in [`design.md`](./design.md),
+Abschnitt 13. Sie setzen auf der fertigen Anwendung auf und behandeln:
+Zielsolver mit Leitplanken, Kursplan mit Begründung stummer Produkte, Bündelung der
+Warnungen, relevanzgesteuerte Feldsichtbarkeit, echte Tooltips und den visuellen Umbau
+samt Dunkelmodus.
+
+**AP 18–20 sind Rechenkernarbeit** (`stummGrund`, `buendleWarnungen`, `model/ziel.ts`)
+und unterliegen denselben harten Regeln wie Phase 1: reine Funktionen in `/src/model/`,
+Tests mit von Hand gerechneten Erwartungswerten.

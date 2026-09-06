@@ -4,7 +4,8 @@ Szenario-Rechner „Ausstiegspfad Schwimmkurse". Statische Website, kein Backend
 Persistenz ausschließlich in `localStorage`. Oberfläche und Bezeichner deutsch.
 
 **Vor der Arbeit lesen:** [`ARCHITEKTUR.md`](./ARCHITEKTUR.md) (fachliche Festlegungen und
-Befunde) und [`UMSETZUNG.md`](./UMSETZUNG.md) (Arbeitspakete in Reihenfolge).
+Befunde), [`UMSETZUNG.md`](./UMSETZUNG.md) (Arbeitspakete in Reihenfolge) und bei jeder
+UI-Arbeit [`design.md`](./design.md) (Gestaltungs- und Bedienvorgaben, verbindlich).
 
 ## Harte Regeln
 
@@ -26,6 +27,12 @@ Befunde) und [`UMSETZUNG.md`](./UMSETZUNG.md) (Arbeitspakete in Reihenfolge).
    falsifizieren, nicht bestätigen.
 7. **Gewinn nicht auf ≥ 0 begrenzen.** Verluste der Anlaufjahre mindern über die gemeinsame
    Veranlagung das zu versteuernde Einkommen — dieser Effekt ist gewollt und erheblich.
+8. **Keine Automatik ohne Zustimmung.** Der Zielsolver schlägt vor und rechnet in der
+   Vorschau, schreibt aber niemals selbsttätig ins Szenario. Übernahme nur per Klick,
+   und dann als eine einzige rückgängig machbare Aktion.
+9. **Farbe trägt nie allein Bedeutung.** Status immer als Symbol plus Text, Diagramme
+   mit Legende und Direktbeschriftung. Farbwerte ausschließlich aus `design.md` 9.2/9.3 —
+   sie sind auf Kontrast und Farbfehlsichtigkeit geprüft.
 
 ## Nach jeder Änderung
 
