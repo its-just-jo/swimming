@@ -169,13 +169,19 @@ Bereich und global.
 `README.md` mit Setup- und Deploy-Anleitung sowie der GitHub-Pages-Workflow
 (`.github/workflows/pages.yml`) sind **fertig**. Offen bleibt:
 
+- ~~Im Pages-Workflow `continue-on-error` im Schritt *Tests* entfernen~~ — erledigt.
+  AP 11 ist abgenommen, ein roter Test verhindert das Deployment.
+- ~~Den Übergangs-Branch aus dem Push-Trigger entfernen~~ — erledigt. Der Workflow
+  reagiert ausschließlich auf `main`, und `main` ist seit dem 06.09.2026 der
+  Default-Branch des Repositorys.
 - `beispiel-szenario.json` gegen die fertige Export-Funktion erneuern (derzeit aus den
-  Defaults erzeugt, Schema stimmt bereits).
-- Im Pages-Workflow `continue-on-error: true` im Schritt *Tests* entfernen, sobald AP 11
-  abgenommen ist. Ab dann muss ein roter Test das Deployment verhindern.
-- Sobald nach `main` zusammengeführt wurde: den Branch
-  `claude/spec-analysis-architecture-lljhu6` aus dem Push-Trigger entfernen.
+  Defaults erzeugt, Schema stimmt bereits). **Offen.**
 - Rechtshinweis im Fußbereich bleibt dauerhaft sichtbar und darf nicht ausblendbar sein.
+
+> **Hinweis zur Veröffentlichung:** Die `github-pages`-Umgebung lässt Deployments nur
+> vom Default-Branch zu. Solange ein anderer Branch der Default war, schlug der Job
+> *Veröffentlichen* ohne Log nach einer Sekunde fehl, während *Prüfen und bauen* grün
+> lief. Tritt das erneut auf, ist zuerst der Default-Branch zu prüfen — nicht der Code.
 
 ---
 
