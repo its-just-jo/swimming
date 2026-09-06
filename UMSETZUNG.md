@@ -174,8 +174,9 @@ Bereich und global.
 - ~~Den Übergangs-Branch aus dem Push-Trigger entfernen~~ — erledigt. Der Workflow
   reagiert ausschließlich auf `main`, und `main` ist seit dem 06.09.2026 der
   Default-Branch des Repositorys.
-- `beispiel-szenario.json` gegen die fertige Export-Funktion erneuern (derzeit aus den
-  Defaults erzeugt, Schema stimmt bereits). **Offen.**
+- ~~`beispiel-szenario.json` gegen die fertige Export-Funktion erneuern~~ — erledigt.
+  Die Datei ist die unveränderte Ausgabe von `alsDatei(exportiere(...))` auf dem Preset
+  „Basis" und wurde über `importiere()` zurückgelesen und durchgerechnet.
 - Rechtshinweis im Fußbereich bleibt dauerhaft sichtbar und darf nicht ausblendbar sein.
 
 > **Hinweis zur Veröffentlichung:** Die `github-pages`-Umgebung lässt Deployments nur
