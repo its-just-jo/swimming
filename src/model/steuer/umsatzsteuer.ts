@@ -13,8 +13,8 @@ import type { Euro } from '../typen';
 
 /** Nettoerloes aus einem brutto fixierten Preis. */
 export function nettoAusBrutto(brutto: Euro, ustpflichtig: boolean, rg: Rechtsgroessen): Euro {
-  void brutto; void ustpflichtig; void rg;
-  throw new Error('nettoAusBrutto: nicht implementiert');
+  if (!ustpflichtig) return brutto;
+  return brutto / (1 + rg.ustRegelsatz);
 }
 
 export interface KleinunternehmerStatus {
@@ -43,16 +43,82 @@ export function kleinunternehmerVerlauf(
   startAlsKleinunternehmer: boolean,
   rg: Rechtsgroessen,
 ): readonly KleinunternehmerStatus[] {
-  void bruttoumsaetzeJeJahr; void startAlsKleinunternehmer; void rg;
-  throw new Error('kleinunternehmerVerlauf: nicht implementiert');
+  const ergebnisse: KleinunternehmerStatus[] = [];
+  let verloren = false;
+  let verlorenGrund: 'vorjahr' | 'laufendes_jahr' | null = null;
+
+  for (let i = 0; i < bruttoumsaetzeJeJahr.length; i++) {
+    const umsatzLaufendesJahr = bruttoumsaetzeJeJahr[i] ?? 0;
+    const vorjahresumsatz = i > 0 ? (bruttoumsaetzeJeJahr[i - 1] ?? 0) : 0;
+    const schwelleGerissenLaufend = umsatzLaufendesJahr > rg.kleinunternehmerLaufendesJahrGrenze;
+
+    if (!startAlsKleinunternehmer) {
+      ergebnisse.push({
+        jahr: i,
+        kleinunternehmer: false,
+        vorjahresumsatz,
+        umsatzLaufendesJahr,
+        schwelleGerissen: schwelleGerissenLaufend,
+        grund: 'manuell_aus',
+      });
+      continue;
+    }
+
+    if (verloren) {
+      ergebnisse.push({
+        jahr: i,
+        kleinunternehmer: false,
+        vorjahresumsatz,
+        umsatzLaufendesJahr,
+        schwelleGerissen: schwelleGerissenLaufend,
+        grund: verlorenGrund,
+      });
+      continue;
+    }
+
+    if (vorjahresumsatz > rg.kleinunternehmerVorjahresgrenze) {
+      verloren = true;
+      verlorenGrund = 'vorjahr';
+      ergebnisse.push({
+        jahr: i,
+        kleinunternehmer: false,
+        vorjahresumsatz,
+        umsatzLaufendesJahr,
+        schwelleGerissen: schwelleGerissenLaufend,
+        grund: 'vorjahr',
+      });
+      continue;
+    }
+
+    if (schwelleGerissenLaufend) {
+      verloren = true;
+      verlorenGrund = 'laufendes_jahr';
+      ergebnisse.push({
+        jahr: i,
+        kleinunternehmer: false,
+        vorjahresumsatz,
+        umsatzLaufendesJahr,
+        schwelleGerissen: true,
+        grund: 'laufendes_jahr',
+      });
+      continue;
+    }
+
+    ergebnisse.push({
+      jahr: i,
+      kleinunternehmer: true,
+      vorjahresumsatz,
+      umsatzLaufendesJahr,
+      schwelleGerissen: false,
+      grund: null,
+    });
+  }
+
+  return ergebnisse;
 }
 
 /** Abziehbare Vorsteuer aus Kostenpositionen, 0 wenn Kleinunternehmer. */
-export function vorsteuer(
-  bruttokosten: Euro,
-  abzugsfaehig: boolean,
-  rg: Rechtsgroessen,
-): Euro {
-  void bruttokosten; void abzugsfaehig; void rg;
-  throw new Error('vorsteuer: nicht implementiert');
+export function vorsteuer(bruttokosten: Euro, abzugsfaehig: boolean, rg: Rechtsgroessen): Euro {
+  if (!abzugsfaehig) return 0;
+  return bruttokosten - bruttokosten / (1 + rg.ustRegelsatz);
 }

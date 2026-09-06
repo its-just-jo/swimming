@@ -25,9 +25,12 @@ Voraussetzung: Node 20 oder neuer.
 
 ## Stand
 
-Datenmodell, Rechtsgrößen, Defaults, Presets und Formatierung sind fertig. Der Rechenkern
-liegt als dokumentierte Signaturen mit einem Testgerüst vor: **78 Tests, davon 69 bewusst
-rot** — sie sind die ausführbare Spezifikation der noch zu schreibenden Implementierung.
+Vollständig umgesetzt: Rechenkern (Steuern, Sozialversicherung, Produkte, Kapazität,
+Gewinn, Simulation, Sensitivität, Break-even, Warnungen), Persistenzschicht
+(localStorage mit Nur-Speicher-Rückfall, Migration, Export/Import) und Oberfläche
+(Eingabeformulare, sechs Kennzahlen mit Herleitung, sechs Diagramme, Warnungen,
+Szenarienverwaltung mit Presets und Vergleich). Alle Tests grün, `tsc --noEmit`
+und `vite build` fehlerfrei.
 
 Architektur und fachliche Festlegungen: [`ARCHITEKTUR.md`](./ARCHITEKTUR.md)
 Arbeitspakete: [`UMSETZUNG.md`](./UMSETZUNG.md)
@@ -51,15 +54,11 @@ Der Workflow gliedert sich in zwei Jobs:
 
 | Job | Inhalt | Blockiert das Deployment? |
 |---|---|---|
-| `pruefen` | `npm ci`, Typecheck, Tests, Build | Typecheck und Build: **ja**. Tests: **noch nicht** |
+| `pruefen` | `npm ci`, Typecheck, Tests, Build | **ja**, alle drei |
 | `veroeffentlichen` | Upload und Deployment nach Pages | — |
 
-Die Tests laufen bewusst noch nicht blockierend, weil der Rechenkern erst implementiert wird
-und 69 der 78 Tests absichtlich rot sind (siehe [`UMSETZUNG.md`](./UMSETZUNG.md), AP 1–11).
-Ihr Ergebnis erscheint in der Zusammenfassung jedes Laufs.
-
-> **Nach Abnahme von AP 11:** `continue-on-error: true` im Schritt *Tests* entfernen. Ab
-> diesem Zeitpunkt muss ein roter Test das Deployment verhindern.
+AP 11 ist abgenommen: der Rechenkern ist vollständig implementiert, ein roter Test
+verhindert das Deployment.
 
 Der Trigger enthält neben `main` derzeit noch den Branch
 `claude/spec-analysis-architecture-lljhu6`, weil das Repository bislang keinen

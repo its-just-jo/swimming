@@ -16,8 +16,19 @@ import type { Anstellung, ProduktErgebnis, Stunden, Wasserkapazitaet, Zeitbudget
 
 /** Mengengewichtete mittlere Dauer eines Kurstermins in Stunden. */
 export function mittlereTerminlaenge(produktErgebnisse: readonly ProduktErgebnis[], produkte: readonly { id: string; dauerJeEinheitMinuten: number }[]): Stunden {
-  void produktErgebnisse; void produkte;
-  throw new Error('mittlereTerminlaenge: nicht implementiert');
+  let stundenGesamt = 0;
+  let minutenGewichtet = 0;
+
+  for (const ergebnis of produktErgebnisse) {
+    if (ergebnis.durchfuehrung === 'fremdlehrkraft') continue;
+    const produkt = produkte.find((p) => p.id === ergebnis.produktId);
+    if (!produkt) continue;
+    stundenGesamt += ergebnis.wasserzeitGesamt;
+    minutenGewichtet += ergebnis.wasserzeitGesamt * produkt.dauerJeEinheitMinuten;
+  }
+
+  if (stundenGesamt === 0) return 0;
+  return minutenGewichtet / stundenGesamt / 60;
 }
 
 export function berechneZeitbudget(eingabe: {
@@ -28,6 +39,26 @@ export function berechneZeitbudget(eingabe: {
   aktiveWochen: number;
   warnschwelle: Stunden;
 }): ZeitbudgetErgebnis {
-  void eingabe;
-  throw new Error('berechneZeitbudget: nicht implementiert');
+  const { anstellung, wasser, eigeneWasserstundenProJahr, mittlereTerminlaengeStunden, aktiveWochen, warnschwelle } =
+    eingabe;
+
+  const hauptjobStunden = anstellung.wochenstundenVollzeit * anstellung.beschaeftigungsgrad;
+  const wasserstunden = aktiveWochen > 0 ? eigeneWasserstundenProJahr / aktiveWochen : 0;
+  const vorbereitung = wasserstunden * wasser.vorbereitungsfaktor;
+  const termineProWoche =
+    mittlereTerminlaengeStunden > 0 ? wasserstunden / mittlereTerminlaengeStunden : 0;
+  const anfahrt = termineProWoche * wasser.anfahrtJeTermin;
+  const admin = wasser.adminStundenProWoche;
+
+  const gesamtProWoche = hauptjobStunden + wasserstunden + vorbereitung + anfahrt + admin;
+
+  return {
+    hauptjobStunden,
+    wasserstunden,
+    vorbereitung,
+    anfahrt,
+    admin,
+    gesamtProWoche,
+    ueberSchwelle: gesamtProWoche > warnschwelle,
+  };
 }

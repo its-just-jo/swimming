@@ -13,12 +13,22 @@
 
 import type { Euro, Lehre } from './typen';
 
+/** Volle Jahreseinkuenfte, anteilig ab dem Startmonat innerhalb des Jahres. */
 export function lehrauftragEinkuenfte(lehre: Lehre, jahrIndex: number): Euro {
-  void lehre; void jahrIndex;
-  throw new Error('lehrauftragEinkuenfte: nicht implementiert');
+  if (!lehre.lehrauftragAktiv) return 0;
+
+  const jahresStart = jahrIndex * 12;
+  const jahresEnde = jahresStart + 12;
+  const aktivAb = Math.max(lehre.startmonat, jahresStart);
+  const aktiveMonate = Math.min(12, Math.max(0, jahresEnde - aktivAb));
+  const fraktion = aktiveMonate / 12;
+
+  return lehre.lvsJeSemester * lehre.satzJeLvs * 2 * fraktion;
 }
 
+/** Bruttojahresentgelt der Professur, 0 vor dem konfigurierten Startjahr. */
 export function professurBrutto(lehre: Lehre, jahrIndex: number): Euro {
-  void lehre; void jahrIndex;
-  throw new Error('professurBrutto: nicht implementiert');
+  if (!lehre.professurAktiv) return 0;
+  if (jahrIndex < lehre.professurStartjahr) return 0;
+  return lehre.professurBruttoProJahr * lehre.professurBeschaeftigungsgrad;
 }

@@ -43,11 +43,32 @@ describe('Einkommensteuer Grundtarif 2025', () => {
 
   it('Tarif ist an den Zonengrenzen stetig', () => {
     // Diese Pruefung faellt auf, sobald eine Tarifkonstante falsch uebernommen
-    // wurde — der haeufigste Fehler bei der jaehrlichen Aktualisierung.
+    // wurde — der haeufigste Fehler bei der jaehrlichen Aktualisierung. Ein
+    // Sprung von genau 1 EUR an der Grenze ist dabei zulaessig, ein groesserer
+    // nicht: der Grund ist Nachgerechnet in Node bestaetigt.
+    //
+    // Nachrechnung 68.480/68.481 (Original-Erwartung war "< 1", faelschlich):
+    //   Zone 3 bei 68.480: y = 5,1037 -> (176,64*y+2397)*y+1015,13 = 17.849,7741
+    //   Zone 4 bei 68.480 (reine Gerade): 0,42*68480-10911,92    = 17.849,68
+    //   -> Restabweichung von 176,64/1015,13 auf 2 Nachkommastellen ~9 Cent,
+    //      das ist die Rundung der veroeffentlichten Formel, keine falsche
+    //      Konstante (Zone 2/3 an 17.443 stimmt bis auf 0,0016 EUR exakt).
+    //   Zone 4 bei 68.481: 0,42*68481-10911,92 = 17.850,10
+    //   floor(17.849,7741) = 17.849, floor(17.850,10) = 17.850 -> Differenz 1.
+    // Nachrechnung 277.825/277.826 zeigt: das ist kein Stetigkeitsfehler,
+    // sondern reine Floor-Granularitaet. Zone 4 und Zone 5 sind an 277.825
+    // exakt (auf den Cent) stetig -- 0,42*277825-10911,92 = 105.774,58 und
+    // 0,45*277825-19246,67 = 105.774,58, Differenz 0 -- und trotzdem springt
+    // der geflootete Wert: 0,45*277826-19246,67 = 105.775,03, floor 105.775
+    // gegen floor(105.774,58) = 105.774, macht ebenfalls Differenz 1. Eine
+    // Steigung von 0,42-0,45 EUR pro EUR zvE kreuzt beim Uebergang zweier
+    // Ganzzahlen gelegentlich eine volle Euro-Grenze; das ist unabhaengig von
+    // jeder Zonengrenze und lässt sich durch keine Tarifkonstante vermeiden,
+    // ohne § 32a Abs. 1 Satz 6 EStG (Abrundung, kein Runden) zu verletzen.
     for (const grenze of [17_443, 68_480, 277_825]) {
       const links = einkommensteuerGrundtarif(grenze, RG);
       const rechts = einkommensteuerGrundtarif(grenze + 1, RG);
-      expect(rechts - links).toBeLessThan(1);
+      expect(rechts - links).toBeLessThanOrEqual(1);
       expect(rechts - links).toBeGreaterThanOrEqual(0);
     }
   });

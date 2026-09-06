@@ -13,11 +13,12 @@
  */
 
 import type { Rechtsgroessen } from './konstanten';
+import { svBeitraegeArbeitnehmer } from './steuer/sozialversicherung';
+import { berechneEinkommensteuer, zuVersteuerndesEinkommen } from './steuer/einkommensteuer';
 import type { Anstellung, AnstellungErgebnis, Euro, Quote } from './typen';
 
 export function bonusFaktor(beschaeftigungsgrad: Quote, skalierung: number): number {
-  void beschaeftigungsgrad; void skalierung;
-  throw new Error('bonusFaktor: nicht implementiert');
+  return Math.max(0, 1 - (1 - beschaeftigungsgrad) / skalierung);
 }
 
 /** Bruttojahresentgelt im Jahr `jahrIndex` inklusive Gehaltssteigerung. */
@@ -25,14 +26,21 @@ export function bruttoImJahr(
   anstellung: Anstellung,
   jahrIndex: number,
 ): { grundgehalt: Euro; bonus: Euro; gesamt: Euro; bonusFaktor: number } {
-  void anstellung; void jahrIndex;
-  throw new Error('bruttoImJahr: nicht implementiert');
+  const steigerungsfaktor = (1 + anstellung.gehaltssteigerungProJahr) ** jahrIndex;
+  const grundgehalt = anstellung.bruttogrundgehaltVollzeit * anstellung.beschaeftigungsgrad * steigerungsfaktor;
+  const faktor = bonusFaktor(anstellung.beschaeftigungsgrad, anstellung.bonusSkalierung);
+  const bonus = anstellung.bonusProJahr * faktor * steigerungsfaktor;
+  return { grundgehalt, bonus, gesamt: grundgehalt + bonus, bonusFaktor: faktor };
 }
 
 /**
  * Vollstaendiges Anstellungsergebnis eines Jahres.
  * `gewinnSelbstaendigkeit` und `lehreinkuenfte` fliessen ein, weil die
- * Einkommensteuer gemeinsam veranlagt wird.
+ * Einkommensteuer gemeinsam veranlagt wird. Der Aufrufer entscheidet durch die
+ * Wahl der Parameter, ob dies die tatsaechliche (kombinierte) oder eine
+ * hypothetische Baseline-Veranlagung ohne Selbststaendigkeit ist — genau
+ * diese Differenzbildung nutzt `gewinn.ts` fuer die Mehrsteuer der
+ * Selbststaendigkeit.
  */
 export function berechneAnstellung(eingabe: {
   anstellung: Anstellung;
@@ -43,6 +51,47 @@ export function berechneAnstellung(eingabe: {
   uebungsleiterFreibetrag: Euro;
   rg: Rechtsgroessen;
 }): AnstellungErgebnis {
-  void eingabe;
-  throw new Error('berechneAnstellung: nicht implementiert');
+  const {
+    anstellung,
+    jahrIndex,
+    gewinnSelbstaendigkeit,
+    lehreinkuenfte,
+    drvBeitragSelbstaendigkeit,
+    uebungsleiterFreibetrag,
+    rg,
+  } = eingabe;
+
+  const brutto = bruttoImJahr(anstellung, jahrIndex);
+  const sv = svBeitraegeArbeitnehmer({
+    bruttolohn: brutto.gesamt,
+    kvStatus: anstellung.kvStatus,
+    pkvBeitragProMonat: anstellung.pkvBeitragProMonat,
+    kinderlosZuschlagPflege: anstellung.kinderlosZuschlagPflege,
+    rg,
+  });
+
+  const zvE = zuVersteuerndesEinkommen({
+    bruttolohn: brutto.gesamt,
+    arbeitnehmerSvBeitraege: sv.gesamtArbeitnehmer,
+    gewinnSelbstaendigkeit,
+    uebungsleiterFreibetrag,
+    lehreinkuenfte,
+    drvBeitragSelbstaendigkeit,
+    kinderfreibetraege: anstellung.kinderfreibetraege,
+    rg,
+  });
+  const steuer = berechneEinkommensteuer(zvE, anstellung.kirchensteuerpflichtig, rg);
+
+  const netto = brutto.gesamt - sv.gesamtArbeitnehmer - steuer.gesamt;
+
+  return {
+    grundgehalt: brutto.grundgehalt,
+    bonus: brutto.bonus,
+    bonusFaktor: brutto.bonusFaktor,
+    bruttoGesamt: brutto.gesamt,
+    sv,
+    steuer,
+    netto,
+  };
 }
+

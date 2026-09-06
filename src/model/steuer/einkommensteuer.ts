@@ -10,8 +10,40 @@
  *  - Keine Werbungskosten ueber dem Arbeitnehmer-Pauschbetrag.
  */
 
-import type { Rechtsgroessen } from '../konstanten';
+import type { EstTarifZone, Rechtsgroessen } from '../konstanten';
 import type { EinkommensteuerErgebnis, Euro, Satz } from '../typen';
+
+function zoneFuer(zvEGerundet: Euro, rg: Rechtsgroessen): EstTarifZone {
+  for (const zone of rg.estTarif) {
+    if (zvEGerundet <= zone.bis) return zone;
+  }
+  // estTarif deckt bis +Infinity ab; dieser Pfad ist unerreichbar.
+  const letzte = rg.estTarif[rg.estTarif.length - 1];
+  if (!letzte) throw new Error('estTarif ist leer');
+  return letzte;
+}
+
+/**
+ * Unrundierte tarifliche Steuer — dient als Basis fuer die numerische
+ * Grenzbelastung, die auf der stetigen Kurve rechnen muss, nicht auf der
+ * auf volle Euro gerundeten Anzeigegroesse (§ 32a Abs. 1 Satz 6 EStG rundet
+ * nur das Anzeigeergebnis, nicht die tatsaechliche Steilheit des Tarifs).
+ */
+function steuerRoh(zvE: Euro, rg: Rechtsgroessen): number {
+  const zvEGerundet = Math.floor(zvE);
+  if (zvEGerundet <= 0) return 0;
+  const zone = zoneFuer(zvEGerundet, rg);
+  switch (zone.art) {
+    case 'null':
+      return 0;
+    case 'progressiv': {
+      const y = (zvEGerundet - (zone.basis ?? 0)) / 10_000;
+      return (((zone.a ?? 0) * y + (zone.b ?? 0)) * y) + (zone.c ?? 0);
+    }
+    case 'linear':
+      return (zone.satz ?? 0) * zvEGerundet - (zone.abzug ?? 0);
+  }
+}
 
 /**
  * Tarifliche Einkommensteuer nach § 32a Abs. 1 EStG.
@@ -19,14 +51,18 @@ import type { EinkommensteuerErgebnis, Euro, Satz } from '../typen';
  * das Ergebnis ebenfalls (§ 32a Abs. 1 Satz 6 EStG).
  */
 export function einkommensteuerGrundtarif(zvE: Euro, rg: Rechtsgroessen): Euro {
-  void zvE; void rg;
-  throw new Error('einkommensteuerGrundtarif: nicht implementiert');
+  return Math.floor(steuerRoh(zvE, rg));
 }
 
 /** Liefert die Tarifzone 1..5 zu einem zvE — nur fuer die Herleitungsanzeige. */
 export function tarifzone(zvE: Euro, rg: Rechtsgroessen): 1 | 2 | 3 | 4 | 5 {
-  void zvE; void rg;
-  throw new Error('tarifzone: nicht implementiert');
+  const zvEGerundet = Math.floor(zvE);
+  for (let i = 0; i < rg.estTarif.length; i++) {
+    if (zvEGerundet <= (rg.estTarif[i] as EstTarifZone).bis) {
+      return (i + 1) as 1 | 2 | 3 | 4 | 5;
+    }
+  }
+  return 5;
 }
 
 /**
@@ -34,8 +70,10 @@ export function tarifzone(zvE: Euro, rg: Rechtsgroessen): 1 | 2 | 3 | 4 | 5 {
  * Ergebnis = min(soliSatz * ESt, milderungssatz * (ESt - Freigrenze)), nie negativ.
  */
 export function solidaritaetszuschlag(einkommensteuer: Euro, rg: Rechtsgroessen): Euro {
-  void einkommensteuer; void rg;
-  throw new Error('solidaritaetszuschlag: nicht implementiert');
+  if (einkommensteuer <= rg.soliFreigrenzeEinzel) return 0;
+  const regulaer = rg.soliSatz * einkommensteuer;
+  const milderung = rg.soliMilderungssatz * (einkommensteuer - rg.soliFreigrenzeEinzel);
+  return Math.max(0, Math.min(regulaer, milderung));
 }
 
 /** Kirchensteuer als Prozentsatz der Einkommensteuer, 0 wenn nicht pflichtig. */
@@ -44,22 +82,29 @@ export function kirchensteuer(
   pflichtig: boolean,
   rg: Rechtsgroessen,
 ): Euro {
-  void einkommensteuer; void pflichtig; void rg;
-  throw new Error('kirchensteuer: nicht implementiert');
+  if (!pflichtig) return 0;
+  return rg.kirchensteuersatz * einkommensteuer;
 }
 
 /**
  * Grenzbelastung des naechsten Euro inklusive Soli und Kirchensteuer.
  * Numerisch als Differenzenquotient ueber 1 EUR — bewusst nicht analytisch,
- * damit Freigrenzen und Zonensprünge korrekt erfasst werden.
+ * damit Freigrenzen und Zonensprünge korrekt erfasst werden. Rechnet auf der
+ * unrundierten Steuerkurve, damit die Euro-Rundung des Anzeigewerts die
+ * Ableitung nicht verrauscht.
  */
 export function grenzbelastung(
   zvE: Euro,
   kirchensteuerpflichtig: boolean,
   rg: Rechtsgroessen,
 ): Satz {
-  void zvE; void kirchensteuerpflichtig; void rg;
-  throw new Error('grenzbelastung: nicht implementiert');
+  const gesamtBei = (z: Euro): number => {
+    const est = steuerRoh(z, rg);
+    const soli = solidaritaetszuschlag(est, rg);
+    const kist = kirchensteuer(est, kirchensteuerpflichtig, rg);
+    return est + soli + kist;
+  };
+  return gesamtBei(zvE + 1) - gesamtBei(zvE);
 }
 
 /** Vollstaendige Steuerberechnung inklusive aller Zwischenwerte fuer die Herleitung. */
@@ -68,8 +113,20 @@ export function berechneEinkommensteuer(
   kirchensteuerpflichtig: boolean,
   rg: Rechtsgroessen,
 ): EinkommensteuerErgebnis {
-  void zvE; void kirchensteuerpflichtig; void rg;
-  throw new Error('berechneEinkommensteuer: nicht implementiert');
+  const einkommensteuerBetrag = einkommensteuerGrundtarif(zvE, rg);
+  const soli = solidaritaetszuschlag(einkommensteuerBetrag, rg);
+  const kist = kirchensteuer(einkommensteuerBetrag, kirchensteuerpflichtig, rg);
+  const gesamt = einkommensteuerBetrag + soli + kist;
+  return {
+    zvE,
+    einkommensteuer: einkommensteuerBetrag,
+    solidaritaetszuschlag: soli,
+    kirchensteuer: kist,
+    gesamt,
+    grenzbelastung: grenzbelastung(zvE, kirchensteuerpflichtig, rg),
+    durchschnittsbelastung: zvE > 0 ? gesamt / zvE : 0,
+    zone: tarifzone(zvE, rg),
+  };
 }
 
 /**
@@ -93,6 +150,27 @@ export function zuVersteuerndesEinkommen(eingabe: {
   kinderfreibetraege: number;
   rg: Rechtsgroessen;
 }): Euro {
-  void eingabe;
-  throw new Error('zuVersteuerndesEinkommen: nicht implementiert');
+  const {
+    bruttolohn,
+    arbeitnehmerSvBeitraege,
+    gewinnSelbstaendigkeit,
+    uebungsleiterFreibetrag,
+    lehreinkuenfte,
+    drvBeitragSelbstaendigkeit,
+    kinderfreibetraege,
+    rg,
+  } = eingabe;
+
+  const einkuenfteAusNichtselbstaendigerArbeit =
+    bruttolohn - rg.arbeitnehmerPauschbetrag - arbeitnehmerSvBeitraege;
+  const einkuenfteAusSelbstaendigkeit = gewinnSelbstaendigkeit - uebungsleiterFreibetrag;
+
+  return (
+    einkuenfteAusNichtselbstaendigerArbeit +
+    einkuenfteAusSelbstaendigkeit +
+    lehreinkuenfte -
+    drvBeitragSelbstaendigkeit -
+    rg.sonderausgabenPauschbetrag -
+    kinderfreibetraege * rg.kinderfreibetragJeKind
+  );
 }
