@@ -13,6 +13,7 @@ import type {
   Fixkostenposition,
   Kursprodukt,
   Lehre,
+  Leitplanken,
   Simulationsparameter,
   SteuerSchalter,
   Szenario,
@@ -83,6 +84,8 @@ export const PRODUKTE_DEFAULT: readonly Kursprodukt[] = [
     zppPreisaufschlag: 0,
     durchfuehrung: 'ich',
     honorarFremdlehrkraftJeStunde: 35,
+    solverRolle: 'variabel',
+    solverMaxZyklenProJahr: 8,
   },
   {
     id: 'p-kinder-fortgeschritten',
@@ -106,6 +109,8 @@ export const PRODUKTE_DEFAULT: readonly Kursprodukt[] = [
     zppPreisaufschlag: 0,
     durchfuehrung: 'ich',
     honorarFremdlehrkraftJeStunde: 35,
+    solverRolle: 'variabel',
+    solverMaxZyklenProJahr: 8,
   },
   {
     id: 'p-erwachsene-nichtschwimmer',
@@ -129,6 +134,8 @@ export const PRODUKTE_DEFAULT: readonly Kursprodukt[] = [
     zppPreisaufschlag: 0,
     durchfuehrung: 'ich',
     honorarFremdlehrkraftJeStunde: 35,
+    solverRolle: 'variabel',
+    solverMaxZyklenProJahr: 6,
   },
   {
     id: 'p-aqua-ohne-zpp',
@@ -152,6 +159,8 @@ export const PRODUKTE_DEFAULT: readonly Kursprodukt[] = [
     zppPreisaufschlag: 0,
     durchfuehrung: 'ich',
     honorarFremdlehrkraftJeStunde: 40,
+    solverRolle: 'variabel',
+    solverMaxZyklenProJahr: 8,
   },
   {
     id: 'p-aqua-mit-zpp',
@@ -175,6 +184,8 @@ export const PRODUKTE_DEFAULT: readonly Kursprodukt[] = [
     zppPreisaufschlag: 0,
     durchfuehrung: 'ich',
     honorarFremdlehrkraftJeStunde: 40,
+    solverRolle: 'variabel',
+    solverMaxZyklenProJahr: 8,
   },
   {
     id: 'p-intensiv-ferien',
@@ -198,6 +209,8 @@ export const PRODUKTE_DEFAULT: readonly Kursprodukt[] = [
     zppPreisaufschlag: 0,
     durchfuehrung: 'ich',
     honorarFremdlehrkraftJeStunde: 35,
+    solverRolle: 'variabel',
+    solverMaxZyklenProJahr: 6,
   },
   {
     id: 'p-bgm-firma',
@@ -221,6 +234,8 @@ export const PRODUKTE_DEFAULT: readonly Kursprodukt[] = [
     zppPreisaufschlag: 0,
     durchfuehrung: 'ich',
     honorarFremdlehrkraftJeStunde: 40,
+    solverRolle: 'variabel',
+    solverMaxZyklenProJahr: 4,
   },
 ];
 
@@ -281,6 +296,19 @@ export const SIMULATION_DEFAULT: Simulationsparameter = {
   rechtsstand: 2025,
 };
 
+/**
+ * Leitplanken des Zielsolvers (design.md 4.3). Die Wasserstunden- und
+ * Wochenbelastungs-Obergrenzen starten deckungsgleich mit den entsprechenden
+ * Werten aus `WASSER_DEFAULT`/`SIMULATION_DEFAULT`, sind danach aber
+ * eigenstaendige, unabhaengig editierbare Werte.
+ */
+export const LEITPLANKEN_DEFAULT: Leitplanken = {
+  wasserstundenProWocheMax: WASSER_DEFAULT.wasserstundenProWoche,
+  wochenbelastungMax: SIMULATION_DEFAULT.wochenbelastungWarnschwelle,
+  samstagsstundenMax: WASSER_DEFAULT.davonSamstag,
+  fremdlehrkraftZulaessig: false,
+};
+
 /** Vollstaendiges Defaultszenario. */
 export function szenarioDefault(id: string, name = 'Basis'): Szenario {
   const jetzt = new Date().toISOString();
@@ -299,6 +327,7 @@ export function szenarioDefault(id: string, name = 'Basis'): Szenario {
     lehre: LEHRE_DEFAULT,
     simulation: SIMULATION_DEFAULT,
     rechtlicheUeberschreibungen: {},
+    leitplanken: LEITPLANKEN_DEFAULT,
   };
 }
 

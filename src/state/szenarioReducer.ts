@@ -109,6 +109,8 @@ const NEUES_PRODUKT_VORLAGE: Omit<Kursprodukt, 'id'> = {
   zppPreisaufschlag: 0,
   durchfuehrung: 'ich',
   honorarFremdlehrkraftJeStunde: 35,
+  solverRolle: 'variabel',
+  solverMaxZyklenProJahr: 8,
 };
 
 const NEUE_FIXKOSTEN_VORLAGE: Omit<Fixkostenposition, 'id'> = {

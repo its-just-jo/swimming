@@ -166,7 +166,20 @@ export interface Kursprodukt {
 
   readonly durchfuehrung: Durchfuehrung;
   readonly honorarFremdlehrkraftJeStunde: Euro;
+
+  /**
+   * Rolle im Zielsolver (design.md 4.3): `fest` = unveraendert, `variabel` =
+   * der Solver darf `zyklenProJahr` bis `solverMaxZyklenProJahr` erhoehen,
+   * `aus` = kommt im Vorschlag nicht vor. Wirkt ausschliesslich im Solver
+   * (model/ziel.ts) — auf die reguläre Berechnung (produkte.ts) hat die Rolle
+   * keinen Einfluss.
+   */
+  readonly solverRolle: SolverRolle;
+  /** Obergrenze fuer `zyklenProJahr`, die der Solver bei `variabel` nicht ueberschreitet. */
+  readonly solverMaxZyklenProJahr: number;
 }
+
+export type SolverRolle = 'fest' | 'variabel' | 'aus';
 
 // ---------------------------------------------------------------------------
 // 3.4 / 3.5 Kosten
@@ -262,6 +275,24 @@ export interface Simulationsparameter {
 /** Nutzerseitige Ueberschreibungen der Rechtsgroessen. Leer = Defaults gelten. */
 export type RechtlicheUeberschreibungen = Partial<Record<string, number>>;
 
+/**
+ * Globale Leitplanken des Zielsolvers (design.md 4.3). Steuern, nicht das
+ * eigentliche Szenario — sie wirken nur, wenn der Solver (model/ziel.ts)
+ * einen Vorschlag rechnet, niemals auf die reguläre Berechnung.
+ *
+ * `samstagsstundenMax` ist bewusst nicht durchsetzbar: `davonSamstag` traegt
+ * in diesem Modell keine Rechenwirkung (ARCHITEKTUR.md 1.7 — Kursprodukte
+ * kennen keinen Wochentag), der Solver kann diese Grenze also nicht pruefen.
+ * Das Feld bleibt fuer eine kuenftige Erweiterung erhalten und wird als
+ * Hinweis (nicht als harte Grenze) behandelt.
+ */
+export interface Leitplanken {
+  readonly wasserstundenProWocheMax: Stunden;
+  readonly wochenbelastungMax: Stunden;
+  readonly samstagsstundenMax: Stunden;
+  readonly fremdlehrkraftZulaessig: boolean;
+}
+
 export interface Szenario {
   readonly id: Id;
   readonly name: string;
@@ -278,6 +309,7 @@ export interface Szenario {
   readonly lehre: Lehre;
   readonly simulation: Simulationsparameter;
   readonly rechtlicheUeberschreibungen: RechtlicheUeberschreibungen;
+  readonly leitplanken: Leitplanken;
 }
 
 // ---------------------------------------------------------------------------
@@ -524,6 +556,63 @@ export interface BreakEvenPunkt {
   readonly benoetigteWasserstundenProWoche: Stunden;
   readonly benoetigteKurseProWoche: number;
   readonly imZeitbudget: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Zielsolver (design.md Abschnitt 4)
+// ---------------------------------------------------------------------------
+
+export type Zielart = 'reduktion' | 'zeitpunkt' | 'nettoziel' | 'zeitbudget';
+
+export interface ZielEingabe {
+  readonly art: Zielart;
+  /** Z1 (reduktion): angestrebter Beschaeftigungsgrad. */
+  readonly zielBeschaeftigungsgrad?: Quote;
+  /** Z2 (zeitpunkt): Jahresindex, bis zu dem der Plan tragen soll. */
+  readonly zielJahrIndex?: number;
+  /** Z3 (nettoziel): geforderter Mindest-Nettobetrag. */
+  readonly zielNetto?: Euro;
+  /** Z4 (zeitbudget): maximale Wochenbelastung. */
+  readonly maxWochenstunden?: Stunden;
+}
+
+export type ZielStatus = 'erreicht' | 'knapp' | 'unerreichbar' | 'kein_ziel';
+
+/** Bindende Beschraenkung, wenn der Solver das Ziel nicht (oder nur knapp) erreicht. */
+export type BindendeBeschraenkung = 'kapazitaet' | 'wochenbelastung' | 'zeithorizont' | null;
+
+export interface ZielZyklenAenderung {
+  readonly produktId: Id;
+  readonly bezeichnung: string;
+  readonly zyklenVorher: number;
+  readonly zyklenNachher: number;
+  /** Der Solver wollte dieses Produkt nicht veraendern (Rolle 'fest' oder 'aus'). */
+  readonly veraenderbar: boolean;
+}
+
+export interface ZielHebel {
+  readonly variable: SensitivitaetsVariable;
+  readonly label: string;
+  /** Betrag, um den sich die Luecke bei 20 % Auslenkung veraendert. */
+  readonly wirkung: Euro;
+}
+
+export interface ZielErgebnis {
+  readonly art: Zielart;
+  readonly status: ZielStatus;
+  readonly beschaeftigungsgrad: Quote;
+  /** Erstes Jahr im Horizont, in dem das Ziel mit diesem Vorschlag erreicht wird. */
+  readonly jahrIndex: number | null;
+  readonly kalenderjahr: number | null;
+  readonly gesamtnetto: Euro;
+  readonly luecke: Euro;
+  readonly benoetigteKurseProJahr: number;
+  readonly benoetigteWasserzeitProJahr: Stunden;
+  readonly wochenbelastung: Stunden;
+  readonly bindendeBeschraenkung: BindendeBeschraenkung;
+  readonly staerksterHebel: ZielHebel | null;
+  /** Vorher-Nachher je Produkt fuer das Vorschlagspanel (design.md 4.5). */
+  readonly zyklenAenderungen: readonly ZielZyklenAenderung[];
 }
 
 // ---------------------------------------------------------------------------
