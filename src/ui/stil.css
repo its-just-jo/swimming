@@ -634,6 +634,7 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 
 .diagramm-karte__kopf {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-2);
@@ -649,6 +650,26 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 }
 
 .diagramm-karte__hinweis--warnung { color: var(--kritisch-text); }
+
+.diagramm-karte__werkzeuge { display: flex; align-items: center; gap: var(--sp-2); flex: none; }
+.diagramm-karte__werkzeuge select {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-bedienelement);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.diagramm-tabelle-wrapper { overflow-x: auto; }
+
+.diagramm-tabelle { width: 100%; border-collapse: collapse; font-size: 13px; }
+.diagramm-tabelle th,
+.diagramm-tabelle td { padding: var(--sp-1) var(--sp-2); border-bottom: 1px solid var(--linie); text-align: right; }
+.diagramm-tabelle th:first-child,
+.diagramm-tabelle td:first-child { text-align: left; }
+.diagramm-tabelle th { color: var(--text-2); font-weight: 500; }
 
 /* --------------------------------------------------------------------- */
 /* Kursplan (design.md 5)                                                 */
