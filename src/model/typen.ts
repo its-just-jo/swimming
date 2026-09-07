@@ -643,10 +643,14 @@ export interface SzenarioIndexEintrag {
   readonly geaendertAm: string;
 }
 
+/** 'system' folgt `prefers-color-scheme`, die anderen beiden ueberschreiben es (design.md 9.2). */
+export type Farbschema = 'system' | 'hell' | 'dunkel';
+
 export interface AppEinstellungen {
   readonly aktivesSzenario: Id | null;
   readonly vergleichsSzenarien: readonly Id[];
   readonly aufgeklappteAbschnitte: readonly string[];
+  readonly farbschema: Farbschema;
 }
 
 export type SpeicherModus = 'localstorage' | 'nur_speicher';

@@ -10,7 +10,7 @@ import { useEffect, useMemo, useReducer, useState } from 'react';
 import { szenarioDefault } from '../model/defaults';
 import type { Kennzahl } from '../model/herleitung';
 import { berechneSzenario } from '../model/simulation';
-import type { Szenario } from '../model/typen';
+import type { Farbschema, Szenario } from '../model/typen';
 import { normalisiere } from '../persistenz/migration';
 import {
   drossle,
@@ -34,6 +34,9 @@ import { Kennzahlenleiste } from './komponenten/Kennzahlenleiste';
 import { SzenarienVerwaltung } from './komponenten/SzenarienVerwaltung';
 import { WarnungenBanner } from './komponenten/WarnungenBanner';
 
+const NAECHSTES_FARBSCHEMA: Record<Farbschema, Farbschema> = { system: 'hell', hell: 'dunkel', dunkel: 'system' };
+const FARBSCHEMA_LABEL: Record<Farbschema, string> = { system: 'System', hell: 'Hell', dunkel: 'Dunkel' };
+
 function ladeInitialesSzenario(): Szenario {
   const einstellungen = ladeEinstellungen();
   const bevorzugteId = einstellungen?.aktivesSzenario ?? ladeIndex()[0]?.id ?? null;
@@ -53,6 +56,7 @@ export function App() {
   const [jahrIndex, setJahrIndex] = useState(0);
   const [ausgewaehlteKennzahl, setAusgewaehlteKennzahl] = useState<Kennzahl | null>(null);
   const [indexVersion, setIndexVersion] = useState(0);
+  const [farbschema, setFarbschema] = useState<Farbschema>(() => ladeEinstellungen()?.farbschema ?? 'system');
 
   const ergebnis = useMemo(() => berechneSzenario(zustand.gegenwart), [zustand.gegenwart]);
   const jahrSicher = Math.min(jahrIndex, ergebnis.jahre.length - 1);
@@ -80,8 +84,15 @@ export function App() {
       aktivesSzenario: zustand.gegenwart.id,
       vergleichsSzenarien: [],
       aufgeklappteAbschnitte: [],
+      farbschema,
     });
-  }, [zustand.gegenwart.id]);
+  }, [zustand.gegenwart.id, farbschema]);
+
+  useEffect(() => {
+    // 'system' entfernt das Attribut: die Medienabfrage in stil.css greift dann wieder.
+    if (farbschema === 'system') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = farbschema === 'dunkel' ? 'dark' : 'light';
+  }, [farbschema]);
 
   useEffect(() => {
     const flush = () => speicherer.flush();
@@ -133,6 +144,14 @@ export function App() {
             </button>
             <button type="button" className="knopf knopf--klein" onClick={() => dispatch({ typ: 'redo' })} disabled={zustand.zukunft.length === 0}>
               ↷ Wiederholen
+            </button>
+            <button
+              type="button"
+              className="knopf knopf--klein"
+              onClick={() => setFarbschema(NAECHSTES_FARBSCHEMA[farbschema])}
+              aria-label={`Farbschema: ${FARBSCHEMA_LABEL[farbschema]}. Klicken, um zu wechseln.`}
+            >
+              Darstellung: {FARBSCHEMA_LABEL[farbschema]}
             </button>
           </div>
         </div>
