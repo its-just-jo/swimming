@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { PRODUKTE_DEFAULT } from '../defaults';
 import { RECHTSGROESSEN_2025 as RG } from '../konstanten';
-import { berechneProdukt, ermittleStummGrund, erloesJeKurs, wasserzeitJeKurs } from '../produkte';
+import {
+  berechneProdukt,
+  ermittleAktiveMonate,
+  ermittleStummGrund,
+  erloesJeKurs,
+  kalenderVonSimulationsmonat,
+  wasserzeitJeKurs,
+} from '../produkte';
 import type { Kursprodukt } from '../typen';
 
 const hole = (id: string): Kursprodukt => {
@@ -247,5 +254,63 @@ describe('ermittleStummGrund (design.md 5.2)', () => {
       rg: RG,
     });
     expect(e.stummGrund).toBe('inaktiv');
+  });
+});
+
+describe('kalenderVonSimulationsmonat', () => {
+  it('Simulationsmonat 0 ist der Startmonat selbst', () => {
+    expect(kalenderVonSimulationsmonat(0, '2026-01-01')).toEqual({ kalenderjahr: 2026, kalendermonat: 1 });
+  });
+
+  it('rechnet ueber ein Kalenderjahresende hinweg', () => {
+    // Start Januar 2026, Simulationsmonat 23 = Dezember 2027.
+    expect(kalenderVonSimulationsmonat(23, '2026-01-01')).toEqual({ kalenderjahr: 2027, kalendermonat: 12 });
+  });
+
+  it('beruecksichtigt einen unterjaehrigen Startmonat', () => {
+    // Start Maerz 2026 (Monat-Index 2), Simulationsmonat 10 = Januar 2027.
+    expect(kalenderVonSimulationsmonat(10, '2026-03-01')).toEqual({ kalenderjahr: 2027, kalendermonat: 1 });
+  });
+});
+
+describe('ermittleAktiveMonate (design.md 5.2, Saisonband)', () => {
+  const START = '2026-01-01';
+
+  it('Ganzjahresprodukt ab Monat 0 ist alle zwoelf Kalendermonate aktiv', () => {
+    const p = { ...hole('p-kinder-anfaenger'), abMonat: 0 };
+    expect(ermittleAktiveMonate(p, 0, START, true, 15, 25)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+  });
+
+  it('Freibadprodukt ist nur Mai bis September aktiv', () => {
+    const p = { ...hole('p-intensiv-ferien'), abMonat: 0 };
+    expect(ermittleAktiveMonate(p, 0, START, true, 15, 25)).toEqual([5, 6, 7, 8, 9]);
+  });
+
+  it('Hallenprodukt ist in den uebrigen Monaten aktiv', () => {
+    const p = { ...hole('p-kinder-anfaenger'), saison: 'halle' as const, abMonat: 0 };
+    expect(ermittleAktiveMonate(p, 0, START, true, 15, 25)).toEqual([1, 2, 3, 4, 10, 11, 12]);
+  });
+
+  it('ein Produkt, das mitten im Jahr startet, zeigt nur die Monate ab seinem Start', () => {
+    // abMonat 6 = simulationsmonat Index 6 = Kalendermonat Juli bei Start Januar 2026.
+    const p = { ...hole('p-kinder-anfaenger'), abMonat: 6 };
+    expect(ermittleAktiveMonate(p, 0, START, true, 15, 25)).toEqual([7, 8, 9, 10, 11, 12]);
+  });
+
+  it('ist leer, wenn das Produkt stumm ist (Prioritaet wie ermittleStummGrund)', () => {
+    const inaktiv = { ...hole('p-kinder-anfaenger'), aktiv: false };
+    expect(ermittleAktiveMonate(inaktiv, 0, START, true, 15, 25)).toEqual([]);
+
+    const ohneHallenbad = hole('p-kinder-anfaenger');
+    expect(ermittleAktiveMonate(ohneHallenbad, 0, START, false, 15, 25)).toEqual([]);
+
+    const vorStart = { ...hole('p-aqua-mit-zpp'), aktiv: true, abMonat: 24 };
+    expect(ermittleAktiveMonate(vorStart, 0, START, true, 15, 25)).toEqual([]);
+  });
+
+  it('ein zweites Jahr rechnet ab dem naechsten Zwoelf-Monats-Block weiter', () => {
+    const p = { ...hole('p-intensiv-ferien'), abMonat: 0 };
+    // jahrIndex 1: Simulationsmonate 12-23, bei Start Januar 2026 exakt wieder Jan-Dez 2027.
+    expect(ermittleAktiveMonate(p, 1, START, true, 15, 25)).toEqual([5, 6, 7, 8, 9]);
   });
 });

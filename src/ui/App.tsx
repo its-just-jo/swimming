@@ -26,11 +26,11 @@ import { BreakEvenDiagramm } from './komponenten/diagramme/BreakEvenDiagramm';
 import { CashflowDiagramm } from './komponenten/diagramme/CashflowDiagramm';
 import { DeckungsbeitragDiagramm } from './komponenten/diagramme/DeckungsbeitragDiagramm';
 import { GesamtnettoDiagramm } from './komponenten/diagramme/GesamtnettoDiagramm';
-import { KapazitaetDiagramm } from './komponenten/diagramme/KapazitaetDiagramm';
 import { TornadoDiagramm } from './komponenten/diagramme/TornadoDiagramm';
 import { EingabeSpalte } from './komponenten/EingabeSpalte';
 import { HerleitungPanel } from './komponenten/HerleitungPanel';
 import { Kennzahlenleiste } from './komponenten/Kennzahlenleiste';
+import { Kursplan } from './komponenten/Kursplan';
 import { SzenarienVerwaltung } from './komponenten/SzenarienVerwaltung';
 import { WarnungenBanner } from './komponenten/WarnungenBanner';
 
@@ -210,13 +210,14 @@ export function App() {
             />
           )}
 
+          <Kursplan szenario={zustand.gegenwart} jahr={jahr} />
+
           <WarnungenBanner warnungen={ergebnis.warnungen} />
 
           <TornadoDiagramm szenario={zustand.gegenwart} />
           <GesamtnettoDiagramm ergebnis={ergebnis} />
           <CashflowDiagramm monate={monateDesJahres} jahr={jahr} />
           <DeckungsbeitragDiagramm jahr={jahr} />
-          <KapazitaetDiagramm jahr={jahr} />
           <BreakEvenDiagramm szenario={zustand.gegenwart} jahrIndex={jahrSicher} />
         </section>
       </main>

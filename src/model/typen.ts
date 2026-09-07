@@ -388,6 +388,7 @@ export interface KapazitaetErgebnis {
   readonly benoetigtFremd: Stunden;
   readonly auslastungFreibad: Quote;
   readonly auslastungHalle: Quote;
+  readonly auslastungGesamt: Quote;
   readonly ueberschreitung: boolean;
 }
 

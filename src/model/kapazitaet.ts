@@ -90,6 +90,7 @@ export function berechneKapazitaet(eingabe: {
     benoetigtFremd: benoetigt.fremd,
     auslastungFreibad: verfuegbar.freibad > 0 ? benoetigt.freibad / verfuegbar.freibad : 0,
     auslastungHalle: verfuegbar.halle > 0 ? benoetigt.halle / verfuegbar.halle : 0,
+    auslastungGesamt: verfuegbar.gesamt > 0 ? benoetigtGesamt / verfuegbar.gesamt : 0,
     ueberschreitung: benoetigt.freibad > verfuegbar.freibad || benoetigt.halle > verfuegbar.halle,
   };
 }

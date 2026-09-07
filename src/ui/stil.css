@@ -645,3 +645,118 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 }
 
 .diagramm-karte__hinweis--warnung { color: var(--kritisch-text); }
+
+/* --------------------------------------------------------------------- */
+/* Kursplan (design.md 5)                                                 */
+/* --------------------------------------------------------------------- */
+
+.kursplan__kopf { margin-bottom: var(--sp-3); }
+.kursplan__kennzahlen { margin: 0; color: var(--text-2); font-size: 13px; line-height: 1.4; }
+
+.kapazitaetsbalken-gruppe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.kapazitaetsbalken__kopf {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+  font-size: 13px;
+}
+
+.kapazitaetsbalken__label { font-weight: 500; }
+.kapazitaetsbalken__zahl { color: var(--text-2); font-size: 12px; }
+
+.kapazitaetsbalken__spur {
+  position: relative;
+  height: 10px;
+  border-radius: var(--radius-marke);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.kapazitaetsbalken__fuellung {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: var(--akzent);
+}
+
+.kapazitaetsbalken__ueber {
+  position: absolute;
+  inset: 0 auto 0 auto;
+  height: 100%;
+  background: var(--kritisch-flaeche);
+}
+
+.kapazitaetsbalken__marke {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--linie-stark);
+}
+
+.kapazitaetsbalken__hinweis {
+  margin: var(--sp-1) 0 0;
+  color: var(--kritisch-text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.kapazitaetsbalken__fremd {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.kursplan-tabelle-wrapper { overflow-x: auto; }
+
+.kursplan-tabelle { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+.kursplan-tabelle th,
+.kursplan-tabelle td {
+  padding: var(--sp-1) var(--sp-2);
+  border-bottom: 1px solid var(--linie);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.kursplan-tabelle th:first-child,
+.kursplan-tabelle td:first-child { text-align: left; white-space: normal; }
+
+.kursplan-tabelle th { color: var(--text-2); font-weight: 500; }
+
+.kursplan-tabelle__monat { padding-left: 2px; padding-right: 2px; text-align: center; }
+
+.saisonzelle {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--surface-2);
+}
+
+.saisonzelle--aktiv { background: var(--akzent); }
+
+.kursplan-tabelle__trenner td { padding: 0; border-bottom: 1px solid var(--linie-stark); }
+
+.kursplan-tabelle__stumm { color: var(--text-3); }
+.kursplan-tabelle__grund { text-align: left; white-space: normal; font-style: italic; }
+
+.kursplan-tabelle__grund-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-style: italic;
+  color: var(--akzent-text);
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -33,9 +33,9 @@
  * Kurs stattfinden, siehe `kurseImJahr`).
  */
 
-import type { Rechtsgroessen } from './konstanten';
+import { MODELL_KONSTANTEN, type Rechtsgroessen } from './konstanten';
 import { nettoAusBrutto } from './steuer/umsatzsteuer';
-import type { Euro, Kursprodukt, ProduktErgebnis, Quote, StummGrund, Stunden } from './typen';
+import type { Euro, Kursprodukt, MonatsIndex, ProduktErgebnis, Quote, StummGrund, Stunden } from './typen';
 
 /** Wasserzeit eines einzelnen Kursdurchlaufs in Stunden. */
 export function wasserzeitJeKurs(produkt: Kursprodukt): Stunden {
@@ -102,6 +102,62 @@ export function ermittleStummGrund(
     return 'ausserhalb_saison';
   }
   return null;
+}
+
+/**
+ * Kalenderjahr und -monat, in dem ein Simulationsmonat (0-basiert, wie
+ * `abMonat`) faellt — dieselbe Umrechnung wie in `simulation.ts`
+ * (`berechneMonate`), hier fuer die Begruendungszeile "startet MM/JJJJ"
+ * stumm gestellter Produkte (design.md 5.2) und fuer `ermittleAktiveMonate`.
+ */
+export function kalenderVonSimulationsmonat(
+  simulationsmonat: number,
+  startdatum: string,
+): { readonly kalenderjahr: number; readonly kalendermonat: number } {
+  const start = new Date(startdatum);
+  const monatAbsolut = start.getUTCMonth() + simulationsmonat;
+  return {
+    kalenderjahr: start.getUTCFullYear() + Math.floor(monatAbsolut / 12),
+    kalendermonat: (monatAbsolut % 12) + 1,
+  };
+}
+
+/**
+ * Kalendermonate (1 = Januar … 12 = Dezember), in denen ein Produkt in
+ * diesem Jahr aktiv ist — fuer das Saisonband im Kursplan (design.md 5.2).
+ * Nutzt dieselbe Monatszuordnung wie `berechneMonate` (ARCHITEKTUR.md 1.7
+ * Nr. 5: Freibad = Mai-September, Halle = uebrige Monate) und dieselben
+ * Gates wie `ermittleStummGrund`, zusaetzlich je Monat begrenzt durch den
+ * Startmonat des Produkts — ein Produkt, das mitten im Jahr startet, zeigt
+ * nur die Monate ab seinem Start.
+ */
+export function ermittleAktiveMonate(
+  produkt: Kursprodukt,
+  jahrIndex: number,
+  startdatum: string,
+  hallenbadVerfuegbar: boolean,
+  aktiveWochenFreibad = 1,
+  aktiveWochenHalle = 1,
+): readonly MonatsIndex[] {
+  if (ermittleStummGrund(produkt, jahrIndex, hallenbadVerfuegbar, aktiveWochenFreibad, aktiveWochenHalle) !== null) {
+    return [];
+  }
+
+  const { freibadMonate, hallenMonate } = MODELL_KONSTANTEN;
+  const saisonMonate = new Set(
+    produkt.saison === 'freibad' ? freibadMonate : produkt.saison === 'halle' ? hallenMonate : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+  );
+
+  const jahresStart = jahrIndex * 12;
+
+  const aktiveMonate: MonatsIndex[] = [];
+  for (let m = 0; m < 12; m++) {
+    const absolutesMonat = jahresStart + m;
+    if (absolutesMonat < produkt.abMonat) continue;
+    const { kalendermonat } = kalenderVonSimulationsmonat(absolutesMonat, startdatum);
+    if (saisonMonate.has(kalendermonat)) aktiveMonate.push(kalendermonat);
+  }
+  return aktiveMonate;
 }
 
 /**

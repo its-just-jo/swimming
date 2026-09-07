@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { WASSER_DEFAULT } from '../defaults';
-import { verfuegbareWasserstunden } from '../kapazitaet';
+import { berechneKapazitaet, verfuegbareWasserstunden } from '../kapazitaet';
+import type { ProduktErgebnis } from '../typen';
 
 describe('Verfuegbare Wasserstunden', () => {
   it('rechnet ohne Hallenbadzugang nur die Freibadwochen', () => {
@@ -44,5 +45,53 @@ describe('Verfuegbare Wasserstunden', () => {
       0,
     );
     expect(e.gesamt).toBeCloseTo(8 * 40, 4);
+  });
+});
+
+function produktErgebnis(teil: Partial<ProduktErgebnis>): ProduktErgebnis {
+  return {
+    produktId: 'p',
+    bezeichnung: 'Test',
+    erloesBrutto: 0,
+    umsatzsteuer: 0,
+    erloesNetto: 0,
+    wasserzeitJeKurs: 0,
+    wasserzeitGesamt: 0,
+    miete: 0,
+    honorar: 0,
+    deckungsbeitrag: 0,
+    deckungsbeitragJeWasserstunde: 0,
+    anzahlKurseProJahr: 0,
+    durchfuehrung: 'ich',
+    saison: 'ganzjahr',
+    stummGrund: null,
+    ...teil,
+  };
+}
+
+describe('berechneKapazitaet', () => {
+  it('auslastungGesamt ist die benoetigte durch die verfuegbare Gesamtzeit (Kursplan-Kopfzeile, design.md 5.1)', () => {
+    // verfuegbar gesamt bei WASSER_DEFAULT mit Hallenbadzugang: 110,4 + 184 = 294,4 h
+    // ein Ganzjahresprodukt mit 131 h Wasserzeit wird im Verhaeltnis der aktiven
+    // Wochen (15 : 25) auf Freibad/Halle verteilt — die Summe bleibt aber 131 h,
+    // die Aufteilung auf die Pools ist fuer auslastungGesamt ohne Belang.
+    const e = berechneKapazitaet({
+      wasser: { ...WASSER_DEFAULT, hallenbadzugang: true, hallenbadAbMonat: 0 },
+      produktErgebnisse: [produktErgebnis({ saison: 'ganzjahr', wasserzeitGesamt: 131 })],
+      jahrIndex: 0,
+    });
+    expect(e.benoetigtGesamt).toBeCloseTo(131, 6);
+    expect(e.verfuegbarGesamt).toBeCloseTo(294.4, 4);
+    expect(e.auslastungGesamt).toBeCloseTo(131 / 294.4, 6);
+  });
+
+  it('auslastungGesamt ist 0, wenn keine Wasserzeit verfuegbar ist', () => {
+    const e = berechneKapazitaet({
+      wasser: { ...WASSER_DEFAULT, hallenbadzugang: false, aktiveWochenFreibad: 0 },
+      produktErgebnisse: [],
+      jahrIndex: 0,
+    });
+    expect(e.verfuegbarGesamt).toBe(0);
+    expect(e.auslastungGesamt).toBe(0);
   });
 });
