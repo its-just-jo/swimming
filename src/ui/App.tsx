@@ -33,6 +33,7 @@ import { Kennzahlenleiste } from './komponenten/Kennzahlenleiste';
 import { Kursplan } from './komponenten/Kursplan';
 import { SzenarienVerwaltung } from './komponenten/SzenarienVerwaltung';
 import { WarnungenBanner } from './komponenten/WarnungenBanner';
+import { Zielkarte } from './komponenten/Zielkarte';
 
 const NAECHSTES_FARBSCHEMA: Record<Farbschema, Farbschema> = { system: 'hell', hell: 'dunkel', dunkel: 'system' };
 const FARBSCHEMA_LABEL: Record<Farbschema, string> = { system: 'System', hell: 'Hell', dunkel: 'Dunkel' };
@@ -167,6 +168,7 @@ export function App() {
             </button>
           </div>
         </div>
+        <Zielkarte szenario={zustand.gegenwart} jahrIndex={jahrSicher} dispatch={dispatch} />
         <Kennzahlenleiste jahr={jahr} ausgewaehlt={ausgewaehlteKennzahl} onAuswaehlen={setAusgewaehlteKennzahl} />
       </header>
 

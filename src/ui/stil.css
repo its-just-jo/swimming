@@ -455,6 +455,10 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 .knopf:disabled { opacity: 0.4; cursor: not-allowed; }
 .knopf--klein { font-size: 12px; padding: var(--sp-1) var(--sp-2); }
 .knopf--aktiv { background: var(--akzent); border-color: var(--akzent); color: #ffffff; }
+/* Muss .knopf:hover in der Spezifitaet schlagen, sonst faellt ein gehoverter
+   aktiver Knopf auf den hellen Hover-Hintergrund zurueck — weisser Text auf
+   fast-weiss, unlesbar. */
+.knopf--aktiv:hover { background: var(--akzent-text); border-color: var(--akzent-text); }
 .knopf--gefahr { color: var(--kritisch-text); border-color: var(--kritisch-text); }
 
 .zuruecksetzen-global { margin-top: var(--sp-4); }
@@ -760,3 +764,130 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* --------------------------------------------------------------------- */
+/* Zielkarte (design.md 4.4/4.5)                                          */
+/* --------------------------------------------------------------------- */
+
+.status-punkt {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-marke);
+  flex: none;
+}
+
+.status-punkt--erreicht { background: var(--erreicht-flaeche); }
+.status-punkt--grenzwert { background: var(--grenzwert-flaeche); }
+.status-punkt--kritisch { background: var(--kritisch-flaeche); }
+.status-punkt--neutral { background: var(--text-3); }
+
+.zielkarte {
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--linie);
+  margin-bottom: var(--sp-3);
+}
+
+.zielkarte__kopf {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.zielkarte__label {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-2);
+}
+
+.segmentsteuerung { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+.zielkarte__eingabe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  font-size: 13px;
+}
+
+.zielkarte__eingabe input[type='text'] {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-bedienelement);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  width: 10ch;
+}
+
+.zielkarte__eingabe select {
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--linie);
+  border-radius: var(--radius-bedienelement);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.zielkarte__stufen { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.zielkarte__stufen .knopf { display: inline-flex; align-items: center; gap: var(--sp-1); }
+
+.zielkarte__statuszeile {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.zielkarte__statuszeile--erreicht { color: var(--erreicht-text); }
+.zielkarte__statuszeile--grenzwert { color: var(--grenzwert-text); }
+.zielkarte__statuszeile--kritisch { color: var(--kritisch-text); }
+.zielkarte__statuszeile--neutral { color: var(--text-3); font-weight: 400; }
+
+.zielkarte__unterzeile {
+  margin: var(--sp-1) 0 0 calc(10px + var(--sp-2));
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.zielkarte__vorschlag-knopf { margin: var(--sp-2) 0 0 calc(10px + var(--sp-2)); }
+
+.vorschlagpanel {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--surface-2);
+  border-radius: var(--radius-karte);
+}
+
+.vorschlagpanel__tabelle-wrapper { overflow-x: auto; }
+
+.vorschlagpanel__tabelle { width: 100%; border-collapse: collapse; font-size: 13px; }
+.vorschlagpanel__tabelle th,
+.vorschlagpanel__tabelle td { padding: var(--sp-1) var(--sp-2); border-bottom: 1px solid var(--linie); text-align: right; }
+.vorschlagpanel__tabelle th:first-child,
+.vorschlagpanel__tabelle td:first-child { text-align: left; }
+.vorschlagpanel__tabelle th { color: var(--text-2); font-weight: 500; }
+
+.vorschlagpanel__fest { color: var(--text-3); }
+.vorschlagpanel__uebernehmen { display: inline-flex; align-items: center; gap: var(--sp-1); white-space: nowrap; }
+
+.vorschlagpanel__vorschau {
+  margin: var(--sp-2) 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.vorschlagpanel__aktionen { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }

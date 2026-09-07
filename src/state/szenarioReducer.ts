@@ -33,6 +33,8 @@ export type Aktion =
   | { typ: 'preset_laden'; schluessel: string }
   | { typ: 'zuruecksetzen'; bereich: 'alle' | keyof Szenario }
   | { typ: 'szenario_ersetzen'; szenario: Szenario }
+  /** Zielsolver-Vorschlag uebernehmen (design.md 4.5) — eine einzige, rueckgaengig machbare Aktion. */
+  | { typ: 'vorschlag_uebernehmen'; szenario: Szenario }
   | { typ: 'undo' }
   | { typ: 'redo' };
 
@@ -214,6 +216,16 @@ export function reduziere(zustand: ZustandMitVerlauf, aktion: Aktion): ZustandMi
         letzterSetzePfad: null,
         letzteSetzeZeit: 0,
       };
+    }
+
+    case 'vorschlag_uebernehmen': {
+      // Anders als 'szenario_ersetzen': das ist eine normale, rueckgaengig
+      // machbare Aenderung AM selben Szenario, keine Umschaltung auf ein
+      // anderes — die bisherige Undo-Historie bleibt erhalten (design.md 4.5).
+      return mitNeuemSzenario(zustand, {
+        ...aktion.szenario,
+        geaendertAm: new Date().toISOString(),
+      });
     }
 
     case 'undo': {

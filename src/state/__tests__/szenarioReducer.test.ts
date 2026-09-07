@@ -165,3 +165,24 @@ describe('reduziere: szenario_ersetzen', () => {
     expect(zustand.zukunft).toHaveLength(0);
   });
 });
+
+describe('reduziere: vorschlag_uebernehmen', () => {
+  it('uebernimmt das Szenario als einen einzigen, rueckgaengig machbaren Schritt (design.md 4.5)', () => {
+    let zustand = anfangsZustand(szenarioDefault('r17'));
+    // Eine vorangegangene Aenderung muss im Verlauf erhalten bleiben — anders
+    // als bei 'szenario_ersetzen', das den Verlauf komplett leert.
+    zustand = reduziere(zustand, { typ: 'setze', pfad: 'anstellung.beschaeftigungsgrad', wert: 0.9 });
+    const vorVorschlag = zustand.gegenwart;
+
+    const vorschlag = { ...vorVorschlag, anstellung: { ...vorVorschlag.anstellung, beschaeftigungsgrad: 0.8 } };
+    zustand = reduziere(zustand, { typ: 'vorschlag_uebernehmen', szenario: vorschlag });
+
+    expect(zustand.gegenwart.anstellung.beschaeftigungsgrad).toBe(0.8);
+    expect(zustand.vergangenheit).toHaveLength(2);
+    expect(zustand.zukunft).toHaveLength(0);
+
+    zustand = reduziere(zustand, { typ: 'undo' });
+    expect(zustand.gegenwart.anstellung.beschaeftigungsgrad).toBe(0.9);
+    expect(zustand.gegenwart.id).toBe(vorVorschlag.id);
+  });
+});

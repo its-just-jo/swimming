@@ -132,6 +132,51 @@ export const WASSER_FELDER: readonly Feldkonfiguration[] = [
   schaetz('adminStundenProWoche', 'Admin-Stunden pro Woche', 'h/Woche', 0, 20, 0.5, 'Pauschale fuer Verwaltung, Abrechnung, Kommunikation.'),
 ];
 
+/**
+ * Globale Leitplanken fuer den Zielsolver (design.md 4.3). Stehen bewusst in
+ * einem eigenen Abschnitt oberhalb der Produktliste, weil sie den Vorschlag
+ * praegen. "Kapazitaet einhalten" ist immer an und daher kein Feld.
+ */
+export const LEITPLANKEN_FELDER: readonly Feldkonfiguration[] = [
+  schaetz(
+    'wasserstundenProWocheMax',
+    'Wasserstunden je Woche, max.',
+    'h/Woche',
+    0,
+    60,
+    0.5,
+    'Harte Obergrenze fuer die eigene Wasserzeit, die der Solver vorschlagen darf.',
+  ),
+  schaetz(
+    'wochenbelastungMax',
+    'Wochenbelastung, max.',
+    'h/Woche',
+    0,
+    100,
+    1,
+    'Harte Obergrenze fuer die gesamte Wochenbelastung (Hauptjob, Wasserzeit, Vor-/Nachbereitung, Anfahrt, Admin) im Vorschlag.',
+  ),
+  schaetz(
+    'samstagsstundenMax',
+    'Samstagsstunden, max.',
+    'h/Woche',
+    0,
+    40,
+    0.5,
+    'Derzeit ohne Rechenwirkung: "davon Samstag" hat im Modell keinen eigenen Wochentagbezug (ARCHITEKTUR.md 1.7).',
+  ),
+  schaetz(
+    'fremdlehrkraftZulaessig',
+    'Fremdlehrkraft im Vorschlag zulaessig',
+    '',
+    0,
+    1,
+    1,
+    'Erlaubt dem Solver, Produkte mit Durchfuehrung "Fremdlehrkraft" zu vergroessern — kauft Kapazitaet zu, ohne das eigene Zeitbudget zu belasten.',
+    'bool',
+  ),
+];
+
 export const STEUER_FELDER: readonly Feldkonfiguration[] = [
   schaetz('kleinunternehmer', 'Kleinunternehmerregelung nutzen', '', 0, 1, 1, '§ 19 UStG — wird bei Schwellenriss automatisch fuer die Folgejahre deaktiviert.', 'bool'),
   schaetz('umsatzsteuerpflichtig', 'Grundsaetzlich umsatzsteuerpflichtig', '', 0, 1, 1, 'Schwimmunterricht ist nach EuGH C-373/19 nicht nach § 4 Nr. 21 UStG befreit.', 'bool'),
@@ -251,6 +296,26 @@ export const PRODUKT_FELDER: readonly Feldkonfiguration[] = [
     schaetz('honorarFremdlehrkraftJeStunde', 'Honorar Fremdlehrkraft', '€/h', 0, 100, 1, 'Nur bei Durchfuehrung "Fremdlehrkraft".'),
     (_s, z) => z['durchfuehrung'] === 'fremdlehrkraft',
     'wirkt erst bei Durchfuehrung "Fremdlehrkraft"',
+  ),
+  schaetz(
+    'solverRolle',
+    'Rolle im Zielsolver',
+    '',
+    0,
+    0,
+    0,
+    '"Fest" laesst der Solver unangetastet, "variabel" darf er bis zur Obergrenze steigern, "aus" taucht im Vorschlag gar nicht auf (design.md 4.3).',
+    'select',
+    [
+      { wert: 'fest', label: 'Fest' },
+      { wert: 'variabel', label: 'Variabel' },
+      { wert: 'aus', label: 'Aus' },
+    ],
+  ),
+  bedingt(
+    schaetz('solverMaxZyklenProJahr', 'Obergrenze Zyklen/Jahr', 'Anzahl', 0, 60, 1, 'Bis zu dieser Zyklenzahl darf der Solver dieses Produkt steigern.'),
+    (_s, z) => z['solverRolle'] === 'variabel',
+    'wirkt erst bei Rolle "Variabel"',
   ),
 ];
 

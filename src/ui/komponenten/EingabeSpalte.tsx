@@ -11,6 +11,7 @@ import {
   FIXKOSTEN_FELDER,
   INVESTITION_FELDER,
   LEHRE_FELDER,
+  LEITPLANKEN_FELDER,
   PRODUKT_FELDER,
   SIMULATION_FELDER,
   STEUER_FELDER,
@@ -66,6 +67,22 @@ export function EingabeSpalte({ szenario, dispatch, eingeblendeteAbschnitte, onA
           szenario={szenario}
           eingeblendet={istEingeblendet('wasser')}
           onEinblenden={() => onAbschnittUmschalten('wasser')}
+        />
+      </Abschnitt>
+
+      <Abschnitt titel="Leitplanken" kennung="leitplanken">
+        <p className="abschnitt__hinweis">
+          Grenzen fuer den Zielsolver (Zielkarte oben) — nicht fuer die freie Eingabe. Die Kapazitaetsgrenze gilt im
+          Vorschlag immer und ist nicht abschaltbar.
+        </p>
+        <SkalarFelder
+          basisPfad="leitplanken"
+          objekt={szenario.leitplanken}
+          felder={LEITPLANKEN_FELDER}
+          dispatch={dispatch}
+          szenario={szenario}
+          eingeblendet={istEingeblendet('leitplanken')}
+          onEinblenden={() => onAbschnittUmschalten('leitplanken')}
         />
       </Abschnitt>
 
