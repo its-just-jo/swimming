@@ -166,8 +166,16 @@ table th {
   .kennzahlenleiste { position: sticky; top: 0; z-index: 10; }
 }
 
-.warnung--kritisch { color: var(--kritisch-text); border-left-color: var(--kritisch-flaeche); }
-.warnung--grenzwert { color: var(--grenzwert-text); border-left-color: var(--grenzwert-flaeche); }
+/* Nur die Ueberschrift darf die Stufenfarbe tragen, der Fliesstext bleibt in
+   Textfarbe (design.md 6.2) — ausser bei den kurzen, alleinstehenden
+   Fehlermeldungen ohne eigenen Titel (z. B. Importfehler), die die ganze
+   Zeile einfaerben. */
+.warnung--kritisch { border-left-color: var(--kritisch-flaeche); }
+.warnung--grenzwert { border-left-color: var(--grenzwert-flaeche); }
+.warnung--kritisch .warnung__titel { color: var(--kritisch-text); }
+.warnung--grenzwert .warnung__titel { color: var(--grenzwert-text); }
+p.warnung--kritisch { color: var(--kritisch-text); }
+p.warnung--grenzwert { color: var(--grenzwert-text); }
 
 .rechtshinweis {
   border-top: 1px solid var(--linie);
@@ -175,6 +183,13 @@ table th {
   color: var(--text-2);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.rechtshinweis__dauerhinweis {
+  margin: var(--sp-2) 0 0;
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--linie);
+  color: var(--text-3);
 }
 
 /* --------------------------------------------------------------------- */
@@ -588,8 +603,23 @@ table th {
 }
 
 .warnung__kopf { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
-.warnung__jahr { color: var(--text-2); font-size: 12px; line-height: 1.4; }
-.warnung p { margin: var(--sp-1) 0 var(--sp-2); }
+.warnung__titel { color: var(--text); }
+.warnung__jahr { color: var(--text-2); font-size: 12px; line-height: 1.4; white-space: nowrap; }
+.warnung p { margin: var(--sp-1) 0 var(--sp-2); color: var(--text); }
+
+.warnung__aktionen { display: flex; gap: var(--sp-2); }
+
+.warnung__jahresliste {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: var(--sp-2) 0 0;
+  border-top: 1px solid var(--linie);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: 12px;
+  color: var(--text-2);
+}
 
 .diagramm-karte {
   background: var(--surface);

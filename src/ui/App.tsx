@@ -68,6 +68,8 @@ export function App() {
   }
 
   const ergebnis = useMemo(() => berechneSzenario(zustand.gegenwart), [zustand.gegenwart]);
+  // Dauerhinweis, kein Warnfall (design.md 6.3) — gehoert in den Fussbereich, nicht in die Warnliste.
+  const rechtsgroessenHinweis = ergebnis.warnungen.find((w) => w.code === 'rechtsgroessen_ungeprueft');
   const jahrSicher = Math.min(jahrIndex, ergebnis.jahre.length - 1);
   const jahr = ergebnis.jahre[jahrSicher];
   const monateDesJahres = useMemo(
@@ -223,6 +225,7 @@ export function App() {
         Dieses Werkzeug rechnet mit vereinfachten Steuerformeln und Schätzwerten.
         Es ersetzt keine Steuer- oder Rechtsberatung. Sämtliche hinterlegten
         Rechtsgrößen sind vor Verwendung zu prüfen.
+        {rechtsgroessenHinweis && <p className="rechtshinweis__dauerhinweis">{rechtsgroessenHinweis.textOhneJahr}</p>}
       </footer>
     </div>
   );
