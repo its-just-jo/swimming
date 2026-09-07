@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { prozent as formatiereProzent } from '../../model/format';
 import type { Feldkonfiguration } from '../feldKonfiguration';
+import { Hilfe } from './Hilfe';
 
 function zahlZuText(wert: number): string {
   return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 10 }).format(wert);
@@ -32,22 +33,24 @@ export function Feld({ konfig, wert, onAendern }: FeldProps) {
 
   if (konfig.typ === 'bool') {
     return (
-      <label className="feld feld--bool" title={konfig.hilfe || undefined}>
+      <label className="feld feld--bool">
         <input type="checkbox" checked={Boolean(wert)} onChange={(e) => onAendern(e.target.checked)} />
         <span>
           {konfig.label}
-          {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" title="Rechtsgroesse"> §</span>}
+          {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" aria-label="Rechtsgroesse"> §</span>}
         </span>
+        <Hilfe label={konfig.label} text={konfig.hilfe} />
       </label>
     );
   }
 
   if (konfig.typ === 'select') {
     return (
-      <label className="feld" title={konfig.hilfe || undefined}>
+      <label className="feld">
         <span className="feld__label">
           {konfig.label}
-          {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" title="Rechtsgroesse"> §</span>}
+          {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" aria-label="Rechtsgroesse"> §</span>}
+          <Hilfe label={konfig.label} text={konfig.hilfe} />
         </span>
         <select value={String(wert)} onChange={(e) => onAendern(e.target.value)}>
           {(konfig.optionen ?? []).map((o) => (
@@ -62,8 +65,11 @@ export function Feld({ konfig, wert, onAendern }: FeldProps) {
 
   if (konfig.typ === 'text') {
     return (
-      <label className="feld" title={konfig.hilfe || undefined}>
-        <span className="feld__label">{konfig.label}</span>
+      <label className="feld">
+        <span className="feld__label">
+          {konfig.label}
+          <Hilfe label={konfig.label} text={konfig.hilfe} />
+        </span>
         <input type="text" value={String(wert ?? '')} onChange={(e) => onAendern(e.target.value)} />
       </label>
     );
@@ -104,10 +110,11 @@ function ZahlFeld({
   }
 
   return (
-    <label className="feld" title={konfig.hilfe || undefined}>
+    <label className="feld">
       <span className="feld__label">
         {konfig.label}
-        {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" title="Rechtsgroesse"> §</span>}
+        {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" aria-label="Rechtsgroesse"> §</span>}
+        <Hilfe label={konfig.label} text={konfig.hilfe} />
       </span>
       <span className="feld__eingabe">
         <input

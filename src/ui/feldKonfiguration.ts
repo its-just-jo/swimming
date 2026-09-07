@@ -118,8 +118,8 @@ export const LEHRE_FELDER: readonly Feldkonfiguration[] = [
   schaetz('satzJeLvs', 'Satz je LVS', '€', 0, 200, 1, 'Honorar je Lehrveranstaltungsstunde.'),
   schaetz('startmonat', 'Startmonat', 'Monat', 0, 120, 1, 'Simulationsmonat, ab dem der Lehrauftrag beginnt.'),
   schaetz('professurAktiv', 'Professurpfad aktiv', '', 0, 1, 1, 'Ersetzt ab dem Startjahr die bisherige Anstellung vollstaendig.', 'bool'),
-  schaetz('professurBruttoProJahr', 'Professur-Brutto pro Jahr', '€/Jahr', 0, 200_000, 500, ''),
-  schaetz('professurBeschaeftigungsgrad', 'Professur-Beschaeftigungsgrad', '', 0, 1, 0.05, '', 'prozent'),
+  schaetz('professurBruttoProJahr', 'Professur-Brutto pro Jahr', '€/Jahr', 0, 200_000, 500, 'Bruttojahresgehalt der Professur. Ersetzt ab dem Startjahr die bisherige Anstellung.'),
+  schaetz('professurBeschaeftigungsgrad', 'Professur-Beschaeftigungsgrad', '', 0, 1, 0.05, 'Umfang der Professur. 1,0 = volle Stelle.', 'prozent'),
   schaetz('professurStartjahr', 'Professur-Startjahr', 'Jahr (Index)', 0, 20, 1, '0 = erstes Simulationsjahr.'),
 ];
 
@@ -134,27 +134,27 @@ export const SIMULATION_FELDER: readonly Feldkonfiguration[] = [
 ];
 
 export const PRODUKT_FELDER: readonly Feldkonfiguration[] = [
-  schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, '', 'text'),
-  schaetz('kategorie', 'Kategorie', '', 0, 0, 0, '', 'select', [
+  schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, 'Freier Name. Erscheint in Kursplan, Diagrammen und Warnungen.', 'text'),
+  schaetz('kategorie', 'Kategorie', '', 0, 0, 0, 'Nur zur Gruppierung in Auswertungen. Ohne Rechenwirkung.', 'select', [
     { wert: 'Kinderkurs', label: 'Kinderkurs' }, { wert: 'Erwachsene', label: 'Erwachsene' },
     { wert: 'Aquafitness', label: 'Aquafitness' }, { wert: 'Intensivkurs', label: 'Intensivkurs' },
     { wert: 'BGM/Firma', label: 'BGM/Firma' },
   ]),
-  schaetz('aktiv', 'Aktiv', '', 0, 1, 1, '', 'bool'),
+  schaetz('aktiv', 'Aktiv', '', 0, 1, 1, 'Schaltet das Produkt aus der Rechnung. Werte bleiben erhalten.', 'bool'),
   schaetz('abMonat', 'Ab Monat', 'Monat', 0, 120, 1, 'Simulationsmonat, ab dem das Produkt angeboten wird.'),
   schaetz('abrechnung', 'Abrechnung', '', 0, 0, 0, 'Bei Pauschale wirkt der Auslastungsgrad nicht auf den Erloes.', 'select', [
     { wert: 'je_teilnehmer', label: 'Je Teilnehmer' }, { wert: 'pauschale', label: 'Pauschale' },
   ]),
-  schaetz('teilnehmerJeKurs', 'Teilnehmer je Kurs', 'Personen', 0, 40, 1, ''),
-  schaetz('preisJeTeilnehmer', 'Preis je Teilnehmer', '€', 0, 2_000, 5, 'Bruttopreis fuer den gesamten Kurs.'),
-  schaetz('pauschaleJeKurs', 'Pauschale je Kurs', '€', 0, 10_000, 50, 'Nur bei Abrechnung "Pauschale".'),
-  schaetz('einheitenJeKurs', 'Einheiten je Kurs', 'Einheiten', 1, 30, 1, ''),
-  schaetz('dauerJeEinheitMinuten', 'Dauer je Einheit', 'Minuten', 15, 180, 5, ''),
+  schaetz('teilnehmerJeKurs', 'Teilnehmer je Kurs', 'Personen', 0, 40, 1, 'Plaetze je Kurs. Mit Auslastung und Preis ergibt sich der Erloes.'),
+  schaetz('preisJeTeilnehmer', 'Preis je Teilnehmer', '€', 0, 2_000, 5, 'Bruttopreis fuer den gesamten Kurs, nicht je Einheit.'),
+  schaetz('pauschaleJeKurs', 'Pauschale je Kurs', '€', 0, 10_000, 50, 'Bruttopauschale je Kurs, unabhaengig von der Teilnehmerzahl. Die Auslastung wirkt hier nicht.'),
+  schaetz('einheitenJeKurs', 'Einheiten je Kurs', 'Einheiten', 1, 30, 1, 'Anzahl der Termine eines Kursdurchlaufs. Bestimmt die Wasserzeit.'),
+  schaetz('dauerJeEinheitMinuten', 'Dauer je Einheit', 'Minuten', 15, 180, 5, 'Dauer eines Termins. Kuerzere Termine erhoehen die Anfahrtszeit je Wasserstunde.'),
   schaetz('beckenflaeche', 'Beckenflaeche', 'Bahnen', 0.1, 5, 0.1, '1,0 = eine Bahn, wirkt als Faktor auf den Mietsatz.'),
-  schaetz('beckenmieteJeStunde', 'Beckenmiete je Stunde', '€/h', 0, 300, 5, ''),
-  schaetz('auslastungsgrad', 'Auslastungsgrad', '', 0, 1, 0.05, '', 'prozent'),
+  schaetz('beckenmieteJeStunde', 'Beckenmiete je Stunde', '€/h', 0, 300, 5, 'Mietsatz je Stunde und Bahn. Groesster Kostenblock — und laut Sensitivitaet meist der staerkste Hebel.'),
+  schaetz('auslastungsgrad', 'Auslastungsgrad', '', 0, 1, 0.05, 'Anteil belegter Plaetze im Mittel. Wirkt auf Erloes, nicht auf Kosten.', 'prozent'),
   schaetz('kurseParallelJeZyklus', 'Kurse parallel je Zyklus', 'Anzahl', 1, 5, 1, 'Erhoeht Erloes und Wasserzeit gleichermassen.'),
-  schaetz('zyklenProJahr', 'Zyklen pro Jahr', 'Anzahl', 0, 20, 1, ''),
+  schaetz('zyklenProJahr', 'Zyklen pro Jahr', 'Anzahl', 0, 20, 1, 'Wie oft dieser Kurs im Jahr durchlaeuft. Zusammen mit "Kurse parallel" ergibt das die Kurszahl.'),
   schaetz('saison', 'Saison', '', 0, 0, 0, 'Ganzjahres- und Hallenprodukte brauchen Hallenbadzugang.', 'select', [
     { wert: 'freibad', label: 'Freibad' }, { wert: 'halle', label: 'Halle' }, { wert: 'ganzjahr', label: 'Ganzjahr' },
   ]),
@@ -167,20 +167,20 @@ export const PRODUKT_FELDER: readonly Feldkonfiguration[] = [
 ];
 
 export const FIXKOSTEN_FELDER: readonly Feldkonfiguration[] = [
-  schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, '', 'text'),
-  schaetz('betragProJahr', 'Betrag pro Jahr', '€/Jahr', 0, 50_000, 50, ''),
-  schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, '', 'bool'),
-  schaetz('indexiert', 'Mit Inflation indexiert', '', 0, 1, 1, '', 'bool'),
+  schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, 'Freier Name. Erscheint in Kursplan, Diagrammen und Warnungen.', 'text'),
+  schaetz('betragProJahr', 'Betrag pro Jahr', '€/Jahr', 0, 50_000, 50, 'Jahresbetrag brutto. Mindert den Gewinn und damit die Steuerlast.'),
+  schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, 'Ob aus diesem Betrag Vorsteuer gezogen werden kann. Bei kommunaler Beckenmiete meist nicht.', 'bool'),
+  schaetz('indexiert', 'Mit Inflation indexiert', '', 0, 1, 1, 'Ob die Position mit der Inflation fortgeschrieben wird.', 'bool'),
 ];
 
 export const INVESTITION_FELDER: readonly Feldkonfiguration[] = [
-  schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, '', 'text'),
-  schaetz('betrag', 'Betrag', '€', 0, 50_000, 50, 'Sofortabzug im Monat des Anfalls.'),
+  schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, 'Freier Name. Erscheint in Kursplan, Diagrammen und Warnungen.', 'text'),
+  schaetz('betrag', 'Betrag', '€', 0, 50_000, 50, 'Einmalbetrag. Wirkt als Ausgabe und mindert den Gewinn im Monat der Zahlung.'),
   schaetz('monat', 'Monat', 'Monat', 0, 120, 1, 'Simulationsmonat, in dem die Investition anfaellt.'),
-  schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, '', 'bool'),
+  schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, 'Ob aus diesem Betrag Vorsteuer gezogen werden kann. Bei kommunaler Beckenmiete meist nicht.', 'bool'),
 ];
 
 export const FAHRTKOSTEN_FELDER: readonly Feldkonfiguration[] = [
-  schaetz('kilometerProJahr', 'Kilometer pro Jahr', 'km', 0, 30_000, 100, ''),
+  schaetz('kilometerProJahr', 'Kilometer pro Jahr', 'km', 0, 30_000, 100, 'Betrieblich gefahrene Kilometer. Mal Kilometersatz eine Betriebsausgabe.'),
   schaetz('satzJeKilometer', 'Satz je Kilometer', '€/km', 0, 1, 0.01, 'Kilometerpauschale.'),
 ];

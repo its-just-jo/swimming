@@ -64,10 +64,10 @@ export function RechtlicheParameter({
       {felder.map(([schluessel, standard]) => {
         const aktuell = ueberschreibungen[schluessel];
         return (
-          <label className="feld" key={schluessel} title={BESCHRIFTUNGEN[schluessel] ?? schluessel}>
+          <label className="feld" key={schluessel}>
             <span className="feld__label">
               {BESCHRIFTUNGEN[schluessel] ?? schluessel}
-              <span className="feld__marke" title="Rechtsgroesse">
+              <span className="feld__marke" aria-label="Rechtsgroesse">
                 {' '}
                 §
               </span>

@@ -11,6 +11,7 @@ import type { Szenario } from '../../model/typen';
 import { alsDatei, exportiere, importiere } from '../../persistenz/exportImport';
 import { ladeIndex, ladeSzenario, loescheSzenario, speichereSzenario } from '../../persistenz/speicher';
 import type { Aktion } from '../../state/szenarioReducer';
+import { Hilfe } from './Hilfe';
 
 function ladeDateiAlsText(datei: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -171,6 +172,9 @@ export function SzenarienVerwaltung({
           <option value="" disabled>
             Preset waehlen…
           </option>
+          {/* Native <option> kann keine eigene Tooltip-Komponente aufnehmen (kein
+              beliebiges Markup im Browser-Dropdown moeglich) — title bleibt hier
+              die einzig verfuegbare Option, anders als bei den Feldern unten. */}
           {PRESETS.map((p) => (
             <option key={p.schluessel} value={p.schluessel} title={p.aussage}>
               {p.name}
@@ -188,11 +192,12 @@ export function SzenarienVerwaltung({
                 checked={vergleichIds.includes(eintrag.id)}
                 disabled={eintrag.id === aktuellesSzenario.id}
                 onChange={() => schalteVergleich(eintrag.id)}
-                title="Zum Vergleich hinzufuegen (max. 3 inkl. aktuellem Szenario)"
+                aria-label={`${eintrag.name} zum Vergleich hinzufuegen`}
               />
               <button type="button" className="szenarien-liste__name" onClick={() => wechsleZu(eintrag.id)}>
                 {eintrag.name}
               </button>
+              <Hilfe label="Vergleich" text="Zum Vergleich hinzufuegen, maximal drei Szenarien inklusive dem aktuellen." />
             </label>
           </li>
         ))}
