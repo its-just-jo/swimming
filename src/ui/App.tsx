@@ -33,7 +33,7 @@ import { Kennzahlenleiste } from './komponenten/Kennzahlenleiste';
 import { Kursplan } from './komponenten/Kursplan';
 import { SzenarienVerwaltung } from './komponenten/SzenarienVerwaltung';
 import { WarnungenBanner } from './komponenten/WarnungenBanner';
-import { Zielkarte } from './komponenten/Zielkarte';
+import { Zielkarte, type ZielStatusKurz } from './komponenten/Zielkarte';
 
 const NAECHSTES_FARBSCHEMA: Record<Farbschema, Farbschema> = { system: 'hell', hell: 'dunkel', dunkel: 'system' };
 const FARBSCHEMA_LABEL: Record<Farbschema, string> = { system: 'System', hell: 'Hell', dunkel: 'Dunkel' };
@@ -61,6 +61,7 @@ export function App() {
   const [eingeblendeteAbschnitte, setEingeblendeteAbschnitte] = useState<readonly string[]>(
     () => ladeEinstellungen()?.eingeblendeteAbschnitte ?? [],
   );
+  const [zielStatus, setZielStatus] = useState<ZielStatusKurz | null>(null);
 
   function abschnittUmschalten(kennung: string) {
     setEingeblendeteAbschnitte((bisher) =>
@@ -168,26 +169,11 @@ export function App() {
             </button>
           </div>
         </div>
-        <Zielkarte szenario={zustand.gegenwart} jahrIndex={jahrSicher} dispatch={dispatch} />
-        <Kennzahlenleiste jahr={jahr} ausgewaehlt={ausgewaehlteKennzahl} onAuswaehlen={setAusgewaehlteKennzahl} />
+        <Zielkarte szenario={zustand.gegenwart} jahrIndex={jahrSicher} dispatch={dispatch} onStatusAendern={setZielStatus} />
+        <Kennzahlenleiste jahr={jahr} ausgewaehlt={ausgewaehlteKennzahl} onAuswaehlen={setAusgewaehlteKennzahl} zielStatus={zielStatus} />
       </header>
 
       <main className="raster">
-        <section className="spalte-eingaben" aria-label="Eingaben">
-          <SzenarienVerwaltung
-            aktuellesSzenario={zustand.gegenwart}
-            dispatch={dispatch}
-            indexVersion={indexVersion}
-            onGeaendert={() => setIndexVersion((v) => v + 1)}
-          />
-          <EingabeSpalte
-            szenario={zustand.gegenwart}
-            dispatch={dispatch}
-            eingeblendeteAbschnitte={eingeblendeteAbschnitte}
-            onAbschnittUmschalten={abschnittUmschalten}
-          />
-        </section>
-
         <section className="spalte-ergebnisse" aria-label="Ergebnisse">
           <div className="jahr-auswahl">
             <label>
@@ -221,6 +207,21 @@ export function App() {
           <CashflowDiagramm monate={monateDesJahres} jahr={jahr} />
           <DeckungsbeitragDiagramm jahr={jahr} />
           <BreakEvenDiagramm szenario={zustand.gegenwart} jahrIndex={jahrSicher} />
+        </section>
+
+        <section className="spalte-eingaben" aria-label="Eingaben">
+          <SzenarienVerwaltung
+            aktuellesSzenario={zustand.gegenwart}
+            dispatch={dispatch}
+            indexVersion={indexVersion}
+            onGeaendert={() => setIndexVersion((v) => v + 1)}
+          />
+          <EingabeSpalte
+            szenario={zustand.gegenwart}
+            dispatch={dispatch}
+            eingeblendeteAbschnitte={eingeblendeteAbschnitte}
+            onAbschnittUmschalten={abschnittUmschalten}
+          />
         </section>
       </main>
 

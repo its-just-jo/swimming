@@ -11,7 +11,7 @@
  * eine einzige Reducer-Aktion, ein Strg+Z macht sie vollstaendig rueckgaengig
  * (design.md 4.5, harte Regel 8).
  */
-import { useMemo, useState, type Dispatch } from 'react';
+import { useEffect, useMemo, useState, type Dispatch } from 'react';
 import { euro, stunden, zahl } from '../../model/format';
 import { MODELL_KONSTANTEN } from '../../model/konstanten';
 import { berechneJahr } from '../../model/simulation';
@@ -35,6 +35,19 @@ const STATUS_KLASSE: Record<ZielStatus, string> = {
   unerreichbar: 'kritisch',
   kein_ziel: 'neutral',
 };
+
+/** Kurzform des Status fuer die reduzierte Drei-Kachel-Leiste auf dem Handy (design.md 11). */
+const STATUS_KURZ: Record<ZielStatus, string> = {
+  erreicht: 'Trägt',
+  knapp: 'Knapp',
+  unerreichbar: 'Trägt nicht',
+  kein_ziel: 'Kein Ziel',
+};
+
+export interface ZielStatusKurz {
+  readonly klasse: string;
+  readonly text: string;
+}
 
 const BESCHRAENKUNGS_TEXT: Record<'kapazitaet' | 'wochenbelastung' | 'zeithorizont', string> = {
   kapazitaet: 'die Kapazität',
@@ -94,10 +107,13 @@ export function Zielkarte({
   szenario,
   jahrIndex,
   dispatch,
+  onStatusAendern,
 }: {
   readonly szenario: Szenario;
   readonly jahrIndex: number;
   readonly dispatch: Dispatch<Aktion>;
+  /** Fuer die reduzierte Kennzahlenleiste auf dem Handy (design.md 11). */
+  readonly onStatusAendern?: (status: ZielStatusKurz | null) => void;
 }) {
   const [zielArt, setZielArt] = useState<Zielart | null>(null);
   const [zielBeschaeftigungsgrad, setZielBeschaeftigungsgrad] = useState(0.8);
@@ -172,6 +188,12 @@ export function Zielkarte({
 
   const statusKlasse = ergebnis ? STATUS_KLASSE[ergebnis.status] : STATUS_KLASSE.kein_ziel;
   const veraenderbareZeilen = ergebnis?.zyklenAenderungen.filter((a) => a.veraenderbar && a.zyklenNachher !== a.zyklenVorher) ?? [];
+
+  useEffect(() => {
+    onStatusAendern?.({ klasse: statusKlasse, text: STATUS_KURZ[ergebnis?.status ?? 'kein_ziel'] });
+    return () => onStatusAendern?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusKlasse, ergebnis?.status]);
 
   return (
     <div className="zielkarte">
@@ -282,7 +304,7 @@ export function Zielkarte({
       )}
 
       <div className="zielkarte__status">
-        <p className={`zielkarte__statuszeile zielkarte__statuszeile--${statusKlasse}`}>
+        <p className={`zielkarte__statuszeile zielkarte__statuszeile--${statusKlasse}`} aria-live="polite">
           <span className={`status-punkt status-punkt--${statusKlasse}`} aria-hidden="true" />
           {statusText(ergebnis)}
         </p>

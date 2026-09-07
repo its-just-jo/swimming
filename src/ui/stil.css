@@ -156,15 +156,19 @@ table th {
 .raster {
   display: grid;
   grid-template-columns: minmax(320px, 380px) 1fr;
+  grid-template-areas: 'eingaben ergebnisse';
   gap: var(--sp-5);
   padding: var(--sp-4);
   align-items: start;
 }
 
-@media (max-width: 900px) {
-  .raster { grid-template-columns: 1fr; }
-  .kennzahlenleiste { position: sticky; top: 0; z-index: 10; }
-}
+/* min-width: 0 hebt die implizite Mindestbreite eines Grid-Kindes auf —
+   sonst zwingen breite Tabelleninhalte (z. B. das Saisonband im Kursplan)
+   die ganze Seite zum waagerechten Scrollen, obwohl die Tabelle selbst
+   einen eigenen scrollenden Container hat (design.md 11: "die Seite selbst
+   nie"). */
+.spalte-eingaben { grid-area: eingaben; min-width: 0; }
+.spalte-ergebnisse { grid-area: ergebnisse; min-width: 0; }
 
 /* Nur die Ueberschrift darf die Stufenfarbe tragen, der Fliesstext bleibt in
    Textfarbe (design.md 6.2) — ausser bei den kurzen, alleinstehenden
@@ -249,6 +253,7 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
   flex-direction: column;
   gap: var(--sp-1);
   align-items: flex-start;
+  min-width: 0;
   background: var(--surface);
   border: none;
   padding: var(--sp-3);
@@ -276,6 +281,21 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
   font-size: 26px;
   font-weight: 600;
   line-height: 1.2;
+}
+
+/* Nur auf dem Handy sichtbar (design.md 11) — Ziel-Kurzstatus in der
+   reduzierten Drei-Kachel-Leiste, sonst deckungsgleich mit der Statuszeile
+   in der Zielkarte darueber. */
+.kennzahl-kachel--zielstatus {
+  display: none;
+  cursor: default;
+}
+
+.kennzahl-kachel__wert--status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 20px;
 }
 
 /* --------------------------------------------------------------------- */
@@ -772,7 +792,10 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 
 .kursplan-tabelle__trenner td { padding: 0; border-bottom: 1px solid var(--linie-stark); }
 
-.kursplan-tabelle__stumm { color: var(--text-3); }
+/* --text-2, nicht --text-3: das ist die Kerninformation dieser Ansicht
+   (design.md 5.2), kein Fusstext — muss die 4,5:1-Fliesstextschwelle
+   erreichen (design.md 12). */
+.kursplan-tabelle__stumm { color: var(--text-2); }
 .kursplan-tabelle__grund { text-align: left; white-space: normal; font-style: italic; }
 
 .kursplan-tabelle__grund-link {
@@ -874,7 +897,8 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 .zielkarte__statuszeile--erreicht { color: var(--erreicht-text); }
 .zielkarte__statuszeile--grenzwert { color: var(--grenzwert-text); }
 .zielkarte__statuszeile--kritisch { color: var(--kritisch-text); }
-.zielkarte__statuszeile--neutral { color: var(--text-3); font-weight: 400; }
+/* --text-2: die Statuszeile ist die Kernaussage der Karte, kein Fusstext (design.md 12). */
+.zielkarte__statuszeile--neutral { color: var(--text-2); font-weight: 400; }
 
 .zielkarte__unterzeile {
   margin: var(--sp-1) 0 0 calc(10px + var(--sp-2));
@@ -901,7 +925,7 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 .vorschlagpanel__tabelle td:first-child { text-align: left; }
 .vorschlagpanel__tabelle th { color: var(--text-2); font-weight: 500; }
 
-.vorschlagpanel__fest { color: var(--text-3); }
+.vorschlagpanel__fest { color: var(--text-2); }
 .vorschlagpanel__uebernehmen { display: inline-flex; align-items: center; gap: var(--sp-1); white-space: nowrap; }
 
 .vorschlagpanel__vorschau {
@@ -912,3 +936,51 @@ p.warnung--grenzwert { color: var(--grenzwert-text); }
 }
 
 .vorschlagpanel__aktionen { display: flex; gap: var(--sp-2); margin-top: var(--sp-3); }
+
+/* --------------------------------------------------------------------- */
+/* Handy (design.md 11) — bewusst als letzter Block: bei gleicher           */
+/* Spezifitaet gewinnt in CSS die spaeter stehende Regel, und diese         */
+/* Ueberschreibungen sollen unabhaengig davon gelten, wo ihre Basisregeln   */
+/* weiter oben in dieser Datei stehen.                                      */
+/* --------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  /* Eingaben rutschen ans Ende — gelesen wird, nicht konfiguriert. Das
+     Markup steht bereits in dieser Reihenfolge (Ergebnisse vor Eingaben —
+     design.md 3 nennt die Eingaben ohnehin "auf Wunsch"), damit Lese- und
+     Fokusreihenfolge auf dem Handy der sichtbaren Reihenfolge entsprechen.
+     grid-template-areas holt die Eingaben auf dem Desktop optisch zurueck
+     nach links (design.md 3: "Werkstatt, linke Spalte"). */
+  .raster {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'ergebnisse' 'eingaben';
+  }
+
+  .kennzahlenleiste {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Sechs Kacheln sind auf 375 px unlesbar — reduziert auf drei. */
+  .kennzahlenleiste .kennzahl-kachel { display: none; }
+  .kennzahlenleiste .kennzahl-kachel[data-kennzahl='gesamtnetto'],
+  .kennzahlenleiste .kennzahl-kachel[data-kennzahl='deckungsgrad'],
+  .kennzahlenleiste .kennzahl-kachel--zielstatus {
+    display: flex;
+  }
+  .kennzahl-kachel__wert--status { font-size: 15px; }
+
+  /* Trefferflaechen mindestens 44 x 44 px. */
+  .knopf,
+  select,
+  .feld input[type='text'],
+  .zielkarte__eingabe input[type='text'],
+  .zielkarte__eingabe select,
+  input[type='checkbox'] {
+    min-height: 44px;
+  }
+  input[type='checkbox'] { min-width: 44px; }
+  .hilfe__ausloeser { min-height: 24px; } /* Ausnahme laut design.md 8.2, nicht 44 px. */
+}

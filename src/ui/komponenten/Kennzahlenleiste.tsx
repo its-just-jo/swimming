@@ -6,6 +6,7 @@
 import { euro, euroMitVorzeichen, prozent, stunden } from '../../model/format';
 import type { JahresErgebnis } from '../../model/typen';
 import type { Kennzahl } from '../../model/herleitung';
+import type { ZielStatusKurz } from './Zielkarte';
 
 export interface KennzahlKachel {
   readonly kennzahl: Kennzahl;
@@ -49,10 +50,13 @@ export function Kennzahlenleiste({
   jahr,
   ausgewaehlt,
   onAuswaehlen,
+  zielStatus,
 }: {
   readonly jahr: JahresErgebnis;
   readonly ausgewaehlt: Kennzahl | null;
   readonly onAuswaehlen: (k: Kennzahl) => void;
+  /** Fuer die auf drei Werte reduzierte Leiste auf dem Handy (design.md 11) — nur dort sichtbar. */
+  readonly zielStatus?: ZielStatusKurz | null;
 }) {
   return (
     <div className="kennzahlenleiste">
@@ -60,6 +64,7 @@ export function Kennzahlenleiste({
         <button
           key={k.kennzahl}
           type="button"
+          data-kennzahl={k.kennzahl}
           className={`kennzahl-kachel ${k.auffaellig ? `kennzahl-kachel--${k.auffaellig}` : ''} ${
             ausgewaehlt === k.kennzahl ? 'kennzahl-kachel--aktiv' : ''
           }`}
@@ -69,6 +74,15 @@ export function Kennzahlenleiste({
           <span className="kennzahl-kachel__wert zahl">{k.wert}</span>
         </button>
       ))}
+      {zielStatus && (
+        <div className="kennzahl-kachel kennzahl-kachel--zielstatus" aria-hidden="true">
+          <span className="kennzahl-kachel__titel">Ziel</span>
+          <span className="kennzahl-kachel__wert kennzahl-kachel__wert--status">
+            <span className={`status-punkt status-punkt--${zielStatus.klasse}`} />
+            {zielStatus.text}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
