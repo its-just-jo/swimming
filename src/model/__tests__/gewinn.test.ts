@@ -44,6 +44,7 @@ function produkt(deckungsbeitrag: number): ProduktErgebnis {
     anzahlKurseProJahr: 0,
     durchfuehrung: 'ich',
     saison: 'ganzjahr',
+    stummGrund: null,
   };
 }
 

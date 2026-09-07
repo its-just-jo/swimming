@@ -319,6 +319,14 @@ export interface AnstellungErgebnis {
   readonly netto: Euro;
 }
 
+/**
+ * Grund, warum ein Produkt im betrachteten Jahr keinen Erloes liefert
+ * (design.md, Abschnitt 5.2). `null` = das Produkt traegt bei (oder liefert
+ * aus einem legitimen Rechengrund 0, z. B. Pauschale 0 EUR — dieses Feld
+ * beschreibt nur die STRUKTURELLEN Nullgruende, nicht jeden Nullwert).
+ */
+export type StummGrund = 'inaktiv' | 'vor_startmonat' | 'kein_hallenbad' | 'ausserhalb_saison' | null;
+
 export interface ProduktErgebnis {
   readonly produktId: Id;
   readonly bezeichnung: string;
@@ -334,6 +342,7 @@ export interface ProduktErgebnis {
   readonly anzahlKurseProJahr: number;
   readonly durchfuehrung: Durchfuehrung;
   readonly saison: Saison | 'ganzjahr';
+  readonly stummGrund: StummGrund;
 }
 
 export interface KapazitaetErgebnis {
@@ -436,9 +445,41 @@ export interface Warnung {
   readonly stufe: WarnStufe;
   readonly titel: string;
   readonly text: string;
+  /**
+   * Derselbe Text ohne die Jahreszahl im Fliesstext — Grundlage fuer
+   * `buendleWarnungen` (design.md 6.1). Bei nicht-jahresbezogenen Warnungen
+   * identisch zu `text`. Explizit statt aus `text` geparst, damit die
+   * Buendelung nicht auf Textmustern raten muss.
+   */
+  readonly textOhneJahr: string;
   /** Betroffenes Jahr, falls jahresbezogen. */
   readonly jahr?: number;
   /** Sprungziel in der Eingabespalte. */
+  readonly ankerAbschnitt?: string;
+}
+
+/** Ein einzelner jahresbezogener Text innerhalb einer gebuendelten Warnung. */
+export interface WarnungsDetail {
+  readonly jahr: number;
+  readonly text: string;
+}
+
+/**
+ * Ergebnis von `buendleWarnungen` (design.md 6.1): fasst alle Warnungen
+ * desselben Codes zu einer Karte zusammen, mit verdichteter Jahresangabe.
+ */
+export interface GebuendelteWarnung {
+  readonly code: WarnCode;
+  readonly stufe: WarnStufe;
+  readonly titel: string;
+  /** Alle betroffenen Kalenderjahre, aufsteigend, ohne Duplikate. */
+  readonly jahre: readonly number[];
+  /** Verdichtete Anzeige, z. B. "2026–2028" oder "alle Jahre". Leer bei globalen Warnungen. */
+  readonly jahresLabel: string;
+  /** Ein Text ohne Jahreszahl im Fliesstext. */
+  readonly text: string;
+  /** Die urspruenglichen jahresbezogenen Texte, fuer "Jahre ▾". */
+  readonly details: readonly WarnungsDetail[];
   readonly ankerAbschnitt?: string;
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { PRODUKTE_DEFAULT } from '../defaults';
 import { RECHTSGROESSEN_2025 as RG } from '../konstanten';
-import { berechneProdukt, erloesJeKurs, wasserzeitJeKurs } from '../produkte';
+import { berechneProdukt, ermittleStummGrund, erloesJeKurs, wasserzeitJeKurs } from '../produkte';
 import type { Kursprodukt } from '../typen';
 
 const hole = (id: string): Kursprodukt => {
@@ -179,5 +179,73 @@ describe('Deckungsbeitrag je Produkt', () => {
     expect(jahr10.deckungsbeitragJeWasserstunde).toBeLessThan(
       jahr0.deckungsbeitragJeWasserstunde,
     );
+  });
+});
+
+describe('ermittleStummGrund (design.md 5.2)', () => {
+  it('ist null, wenn das Produkt beitraegt', () => {
+    const grund = ermittleStummGrund(hole('p-kinder-anfaenger'), 0, true, 15, 25);
+    expect(grund).toBeNull();
+  });
+
+  it('meldet inaktiv, wenn das Produkt ausgeschaltet ist', () => {
+    const grund = ermittleStummGrund({ ...hole('p-kinder-anfaenger'), aktiv: false }, 0, true, 15, 25);
+    expect(grund).toBe('inaktiv');
+  });
+
+  it('meldet vor_startmonat, wenn der Startmonat noch nicht erreicht ist', () => {
+    const grund = ermittleStummGrund({ ...hole('p-aqua-mit-zpp'), aktiv: true, abMonat: 24 }, 0, true, 15, 25);
+    expect(grund).toBe('vor_startmonat');
+  });
+
+  it('meldet kein_hallenbad fuer Ganzjahres-/Hallenprodukte ohne Hallenbadzugang', () => {
+    const ganzjahr = ermittleStummGrund(hole('p-kinder-anfaenger'), 0, false, 15, 25);
+    expect(ganzjahr).toBe('kein_hallenbad');
+  });
+
+  it('meldet ausserhalb_saison, wenn die zugehoerige Saison 0 aktive Wochen hat', () => {
+    const freibad = { ...hole('p-intensiv-ferien'), saison: 'freibad' as const };
+    expect(ermittleStummGrund(freibad, 0, true, 0, 25)).toBe('ausserhalb_saison');
+    expect(ermittleStummGrund(freibad, 0, true, 15, 25)).toBeNull();
+
+    const halle = { ...hole('p-kinder-anfaenger'), saison: 'halle' as const };
+    expect(ermittleStummGrund(halle, 0, true, 15, 0)).toBe('ausserhalb_saison');
+  });
+
+  it('inaktiv geht kein_hallenbad und vor_startmonat vor (Prioritaet)', () => {
+    const grund = ermittleStummGrund(
+      { ...hole('p-aqua-mit-zpp'), aktiv: false, abMonat: 24 },
+      0,
+      false,
+      0,
+      0,
+    );
+    expect(grund).toBe('inaktiv');
+  });
+
+  it('vor_startmonat geht kein_hallenbad vor (Prioritaet)', () => {
+    const grund = ermittleStummGrund(
+      { ...hole('p-aqua-mit-zpp'), aktiv: true, abMonat: 24 },
+      0,
+      false,
+      0,
+      0,
+    );
+    expect(grund).toBe('vor_startmonat');
+  });
+
+  it('berechneProdukt traegt denselben Grund in das Ergebnis ein', () => {
+    const e = berechneProdukt({
+      produkt: { ...hole('p-kinder-anfaenger'), aktiv: false },
+      jahrIndex: 0,
+      preisIndex: 1,
+      mietIndex: 1,
+      ustpflichtig: true,
+      ausfallquote: 0,
+      ausfallMindertErloes: false,
+      hallenbadVerfuegbar: true,
+      rg: RG,
+    });
+    expect(e.stummGrund).toBe('inaktiv');
   });
 });

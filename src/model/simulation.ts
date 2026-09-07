@@ -95,6 +95,8 @@ function bruttoumsaetzeBisJahr(
         ausfallquote: wasser.ausfallquote,
         ausfallMindertErloes: wasser.ausfallWirkung === 'kapazitaet_und_erloes',
         hallenbadVerfuegbar,
+        aktiveWochenFreibad: wasser.aktiveWochenFreibad,
+        aktiveWochenHalle: wasser.aktiveWochenHalle,
         rg,
       });
       summe += ergebnis.erloesBrutto;
@@ -137,6 +139,8 @@ function berechneJahrKern(szenario: Szenario, jahrIndex: number, rg: Rechtsgroes
       ausfallquote: wasser.ausfallquote,
       ausfallMindertErloes,
       hallenbadVerfuegbar,
+      aktiveWochenFreibad: wasser.aktiveWochenFreibad,
+      aktiveWochenHalle: wasser.aktiveWochenHalle,
       rg,
     }),
   );

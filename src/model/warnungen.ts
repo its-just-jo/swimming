@@ -11,7 +11,7 @@
 
 import { mitUeberschreibungen, MODELL_KONSTANTEN, rechtsgroessenFuer } from './konstanten';
 import { istHauptberuflichSelbstaendig } from './steuer/sozialversicherung';
-import type { Ergebnis, JahresErgebnis, Szenario, Warnung } from './typen';
+import type { Ergebnis, GebuendelteWarnung, JahresErgebnis, Szenario, Warnung, WarnungsDetail } from './typen';
 
 function pruefeJahr(szenario: Szenario, jahr: JahresErgebnis): Warnung[] {
   const warnungen: Warnung[] = [];
@@ -22,6 +22,7 @@ function pruefeJahr(szenario: Szenario, jahr: JahresErgebnis): Warnung[] {
       stufe: 'kritisch',
       titel: 'Wasserkapazitaet ueberschritten',
       text: `Im Jahr ${jahr.kalenderjahr} uebersteigt die benoetigte Wasserzeit (${jahr.kapazitaet.benoetigtGesamt.toFixed(1)} h) die verfuegbare Kapazitaet (${jahr.kapazitaet.verfuegbarGesamt.toFixed(1)} h). Die Zahlen zeigen den geplanten, nicht den kapazitaetsgedeckelten Wert.`,
+      textOhneJahr: `Die benoetigte Wasserzeit uebersteigt die verfuegbare Kapazitaet. Die Zahlen zeigen den geplanten, nicht den kapazitaetsgedeckelten Wert.`,
       jahr: jahr.kalenderjahr,
       ankerAbschnitt: 'wasser',
     });
@@ -34,11 +35,13 @@ function pruefeJahr(szenario: Szenario, jahr: JahresErgebnis): Warnung[] {
     bruttolohn: jahr.anstellung.bruttoGesamt,
   });
   if (hauptberuflich.hauptberuflich) {
+    const indiz = `${hauptberuflich.grundZeit ? 'das Zeitindiz' : ''}${hauptberuflich.grundZeit && hauptberuflich.grundEinkommen ? ' und ' : ''}${hauptberuflich.grundEinkommen ? 'das Einkommensindiz' : ''}`;
     warnungen.push({
       code: 'hauptberuflich_selbstaendig',
       stufe: 'grenzwert',
       titel: 'Hauptberuflichkeit droht (§ 5 Abs. 5 SGB V)',
-      text: `Im Jahr ${jahr.kalenderjahr} spricht ${hauptberuflich.grundZeit ? 'das Zeitindiz' : ''}${hauptberuflich.grundZeit && hauptberuflich.grundEinkommen ? ' und ' : ''}${hauptberuflich.grundEinkommen ? 'das Einkommensindiz' : ''} fuer eine hauptberufliche Selbststaendigkeit. Damit kann die Pflichtversicherung in der Anstellung entfallen — das gesamte Einkommen wuerde beitragspflichtig.`,
+      text: `Im Jahr ${jahr.kalenderjahr} spricht ${indiz} fuer eine hauptberufliche Selbststaendigkeit. Damit kann die Pflichtversicherung in der Anstellung entfallen — das gesamte Einkommen wuerde beitragspflichtig.`,
+      textOhneJahr: `Es spricht ${indiz} fuer eine hauptberufliche Selbststaendigkeit. Damit kann die Pflichtversicherung in der Anstellung entfallen — das gesamte Einkommen wuerde beitragspflichtig.`,
       jahr: jahr.kalenderjahr,
       ankerAbschnitt: 'anstellung',
     });
@@ -50,6 +53,7 @@ function pruefeJahr(szenario: Szenario, jahr: JahresErgebnis): Warnung[] {
       stufe: 'grenzwert',
       titel: 'Kleinunternehmergrenze gerissen',
       text: `Im Jahr ${jahr.kalenderjahr} greift die Kleinunternehmerregelung (§ 19 UStG) nicht mehr — der Umsatz ist umsatzsteuerpflichtig geworden, ein automatischer Rueckwechsel ist nicht vorgesehen.`,
+      textOhneJahr: `Die Kleinunternehmerregelung (§ 19 UStG) greift nicht mehr — der Umsatz ist umsatzsteuerpflichtig geworden, ein automatischer Rueckwechsel ist nicht vorgesehen.`,
       jahr: jahr.kalenderjahr,
       ankerAbschnitt: 'steuer',
     });
@@ -61,6 +65,7 @@ function pruefeJahr(szenario: Szenario, jahr: JahresErgebnis): Warnung[] {
       stufe: 'grenzwert',
       titel: 'Jahresarbeitsentgeltgrenze ueberschritten',
       text: `Im Jahr ${jahr.kalenderjahr} liegt das Bruttoentgelt ueber der JAEG — eine echte Pflichtversicherung ist rechtlich regelmaessig nicht mehr moeglich, die Mitgliedschaft ist dann freiwillig. Der KV-Status ist vor Nutzung zu pruefen.`,
+      textOhneJahr: `Das Bruttoentgelt liegt ueber der JAEG — eine echte Pflichtversicherung ist rechtlich regelmaessig nicht mehr moeglich, die Mitgliedschaft ist dann freiwillig. Der KV-Status ist vor Nutzung zu pruefen.`,
       jahr: jahr.kalenderjahr,
       ankerAbschnitt: 'anstellung',
     });
@@ -72,6 +77,7 @@ function pruefeJahr(szenario: Szenario, jahr: JahresErgebnis): Warnung[] {
       stufe: 'grenzwert',
       titel: 'Wochenbelastung ueber der Schwelle',
       text: `Im Jahr ${jahr.kalenderjahr} liegt die Wochenbelastung bei ${jahr.zeit.gesamtProWoche.toFixed(1)} h und damit ueber der konfigurierten Schwelle von ${szenario.simulation.wochenbelastungWarnschwelle} h.`,
+      textOhneJahr: `Die Wochenbelastung liegt bei ${jahr.zeit.gesamtProWoche.toFixed(1)} h und damit ueber der konfigurierten Schwelle von ${szenario.simulation.wochenbelastungWarnschwelle} h.`,
       jahr: jahr.kalenderjahr,
       ankerAbschnitt: 'wasser',
     });
@@ -86,6 +92,7 @@ function pruefeJahr(szenario: Szenario, jahr: JahresErgebnis): Warnung[] {
           stufe: 'hinweis',
           titel: 'Klumpenrisiko einzelnes Produkt',
           text: `Im Jahr ${jahr.kalenderjahr} traegt "${p.bezeichnung}" mehr als ${Math.round(MODELL_KONSTANTEN.klumpenrisikoSchwelle * 100)} % des Deckungsbeitrags. Faellt dieses Produkt weg, kippt das Ergebnis deutlich.`,
+          textOhneJahr: `"${p.bezeichnung}" traegt mehr als ${Math.round(MODELL_KONSTANTEN.klumpenrisikoSchwelle * 100)} % des Deckungsbeitrags. Faellt dieses Produkt weg, kippt das Ergebnis deutlich.`,
           jahr: jahr.kalenderjahr,
           ankerAbschnitt: 'produkte',
         });
@@ -123,6 +130,7 @@ export function ermittleWarnungen(szenario: Szenario, ergebnis: Ergebnis): reado
       stufe: 'kritisch',
       titel: 'Kein Hallenbadzugang',
       text: 'Ganzjahres- und Hallenprodukte liefern ohne Hallenbadzugang keinen Erloes. Diese Produkte tragen aktuell 0 EUR zum Ergebnis bei, obwohl sie aktiv sind.',
+      textOhneJahr: 'Ganzjahres- und Hallenprodukte liefern ohne Hallenbadzugang keinen Erloes. Diese Produkte tragen aktuell 0 EUR zum Ergebnis bei, obwohl sie aktiv sind.',
       ankerAbschnitt: 'wasser',
     });
   }
@@ -133,6 +141,7 @@ export function ermittleWarnungen(szenario: Szenario, ergebnis: Ergebnis): reado
       stufe: 'kritisch',
       titel: 'Uebungsleiterpauschale unvereinbar mit eigenen Kursprodukten',
       text: '§ 3 Nr. 26 EStG setzt eine Taetigkeit im Dienst einer gemeinnuetzigen Koerperschaft voraus. Auf Kurse auf eigene Rechnung ist die Pauschale nicht anwendbar — auch nicht anteilig.',
+      textOhneJahr: '§ 3 Nr. 26 EStG setzt eine Taetigkeit im Dienst einer gemeinnuetzigen Koerperschaft voraus. Auf Kurse auf eigene Rechnung ist die Pauschale nicht anwendbar — auch nicht anteilig.',
       ankerAbschnitt: 'steuer',
     });
   }
@@ -149,6 +158,7 @@ export function ermittleWarnungen(szenario: Szenario, ergebnis: Ergebnis): reado
           stufe: 'hinweis',
           titel: 'Bruttoentgelt unter der Beitragsbemessungsgrenze',
           text: `Im Jahr ${jahr.kalenderjahr} schoepft das Arbeitsentgelt die Beitragsbemessungsgrenze nicht mehr aus — bei freiwilliger Versicherung werden Nebeneinkuenfte in Hoehe des Restraums beitragspflichtig.`,
+          textOhneJahr: `Das Arbeitsentgelt schoepft die Beitragsbemessungsgrenze nicht mehr aus — bei freiwilliger Versicherung werden Nebeneinkuenfte in Hoehe des Restraums beitragspflichtig.`,
           jahr: jahr.kalenderjahr,
           ankerAbschnitt: 'anstellung',
         });
@@ -167,6 +177,7 @@ export function ermittleWarnungen(szenario: Szenario, ergebnis: Ergebnis): reado
       stufe: 'hinweis',
       titel: 'Luecke bleibt am Ende des Horizonts offen',
       text: `Im letzten Jahr des Horizonts (${letztesJahr.kalenderjahr}) deckt das Szenario ${Math.round(letztesJahr.deckungsgrad * 100)} % des Vollzeit-Baseline-Nettos. Die Luecke schliesst sich ueber den betrachteten Zeitraum nicht vollstaendig.`,
+      textOhneJahr: `Im letzten Jahr des Horizonts deckt das Szenario ${Math.round(letztesJahr.deckungsgrad * 100)} % des Vollzeit-Baseline-Nettos. Die Luecke schliesst sich ueber den betrachteten Zeitraum nicht vollstaendig.`,
       jahr: letztesJahr.kalenderjahr,
       ankerAbschnitt: 'produkte',
     });
@@ -177,6 +188,7 @@ export function ermittleWarnungen(szenario: Szenario, ergebnis: Ergebnis): reado
     stufe: 'hinweis',
     titel: 'Rechtsgroessen vor Nutzung pruefen',
     text: 'Die hinterlegten Rechtsgroessen (Rechtsstand 2025) sind Platzhalter mit belastbarer, aber nicht in jedem Fall amtlich verifizierter Quelle. Vor produktiver Nutzung gegen die Primaerquelle pruefen (siehe "Rechtliche Parameter").',
+    textOhneJahr: 'Die hinterlegten Rechtsgroessen (Rechtsstand 2025) sind Platzhalter mit belastbarer, aber nicht in jedem Fall amtlich verifizierter Quelle. Vor produktiver Nutzung gegen die Primaerquelle pruefen (siehe "Rechtliche Parameter").',
     ankerAbschnitt: 'rechtliche-parameter',
   });
 
@@ -194,4 +206,107 @@ export function ermittleWarnungen(szenario: Szenario, ergebnis: Ergebnis): reado
     rechtsgroessen_ungeprueft: 10,
   };
   return [...warnungen].sort((a, b) => (reihenfolge[a.code] ?? 99) - (reihenfolge[b.code] ?? 99));
+}
+
+/** Zusammenhaengende Jahresgruppe, z. B. 2026–2028. */
+interface Jahresgruppe {
+  readonly start: number;
+  readonly ende: number;
+}
+
+function bildeJahresgruppen(jahreSortiert: readonly number[]): readonly Jahresgruppe[] {
+  const gruppen: Jahresgruppe[] = [];
+  for (const jahr of jahreSortiert) {
+    const letzte = gruppen[gruppen.length - 1];
+    if (letzte && jahr === letzte.ende + 1) {
+      gruppen[gruppen.length - 1] = { start: letzte.start, ende: jahr };
+    } else {
+      gruppen.push({ start: jahr, ende: jahr });
+    }
+  }
+  return gruppen;
+}
+
+function formatiereGruppe(g: Jahresgruppe): string {
+  return g.start === g.ende ? String(g.start) : `${g.start}–${g.ende}`;
+}
+
+/**
+ * Verdichtet eine Jahresliste zu einem Label (design.md 6.1):
+ *  - eine Jahresgruppe                → "2026" bzw. "2026–2028"
+ *  - bis zu drei Gruppen               → mit Komma verbunden, z. B. "2026, 2028–2030"
+ *  - mehr als drei Gruppen             → "2026–2035 · 8 Jahre"
+ *  - deckt alle betrachteten Jahre ab  → "alle Jahre"
+ *
+ * `alleJahreDesHorizonts` ist die Menge aller Jahre, die ueberhaupt in der
+ * betrachteten Warnungsliste vorkommen — der Bezugsrahmen, gegen den "alle
+ * Jahre" geprueft wird.
+ */
+export function verdichteJahresLabel(
+  jahre: readonly number[],
+  alleJahreDesHorizonts: readonly number[],
+): string {
+  if (jahre.length === 0) return '';
+  const eindeutig = [...new Set(jahre)].sort((a, b) => a - b);
+  const horizont = new Set(alleJahreDesHorizonts);
+
+  if (horizont.size > 0 && eindeutig.length === horizont.size && eindeutig.every((j) => horizont.has(j))) {
+    return 'alle Jahre';
+  }
+
+  const gruppen = bildeJahresgruppen(eindeutig);
+  if (gruppen.length > 3) {
+    const erstes = eindeutig[0];
+    const letztes = eindeutig[eindeutig.length - 1];
+    return `${erstes}–${letztes} · ${eindeutig.length} Jahre`;
+  }
+  return gruppen.map(formatiereGruppe).join(', ');
+}
+
+/**
+ * Fasst Warnungen desselben Codes zu je einer Karte zusammen (design.md 6.1).
+ * Sortierung: Stufe (kritisch → grenzwert → hinweis), innerhalb der Stufe
+ * nach Anzahl betroffener Jahre absteigend.
+ */
+export function buendleWarnungen(warnungen: readonly Warnung[]): readonly GebuendelteWarnung[] {
+  const alleJahre = [...new Set(warnungen.map((w) => w.jahr).filter((j): j is number => j !== undefined))];
+
+  const nachCode = new Map<string, Warnung[]>();
+  for (const w of warnungen) {
+    const liste = nachCode.get(w.code) ?? [];
+    liste.push(w);
+    nachCode.set(w.code, liste);
+  }
+
+  const buendel: GebuendelteWarnung[] = [];
+  for (const [, gruppe] of nachCode) {
+    const erste = gruppe[0];
+    if (!erste) continue;
+
+    const jahre = [...new Set(gruppe.map((w) => w.jahr).filter((j): j is number => j !== undefined))].sort(
+      (a, b) => a - b,
+    );
+    const details: WarnungsDetail[] = gruppe
+      .filter((w): w is Warnung & { jahr: number } => w.jahr !== undefined)
+      .map((w) => ({ jahr: w.jahr, text: w.text }))
+      .sort((a, b) => a.jahr - b.jahr);
+
+    buendel.push({
+      code: erste.code,
+      stufe: erste.stufe,
+      titel: erste.titel,
+      jahre,
+      jahresLabel: verdichteJahresLabel(jahre, alleJahre),
+      text: erste.textOhneJahr,
+      details,
+      ...(erste.ankerAbschnitt !== undefined ? { ankerAbschnitt: erste.ankerAbschnitt } : {}),
+    });
+  }
+
+  const stufenRang: Record<Warnung['stufe'], number> = { kritisch: 0, grenzwert: 1, hinweis: 2 };
+  return buendel.sort((a, b) => {
+    const stufenDiff = stufenRang[a.stufe] - stufenRang[b.stufe];
+    if (stufenDiff !== 0) return stufenDiff;
+    return b.jahre.length - a.jahre.length;
+  });
 }

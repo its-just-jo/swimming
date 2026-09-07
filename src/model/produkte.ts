@@ -24,11 +24,18 @@
  * beiden Modi enthalten) und zusaetzlich den Erloes, wenn
  * `ausfallWirkung === 'kapazitaet_und_erloes'` — der Aufrufer uebersetzt den
  * Schalter in das Flag `ausfallMindertErloes`.
+ *
+ * stummGrund (design.md 5.2): macht sichtbar, WARUM ein Produkt 0 EUR liefert,
+ * statt es stillschweigend als "0 €" auszuweisen. `aktiveWochenFreibad` und
+ * `aktiveWochenHalle` sind optional (Default 1 = unbegrenzt) und ausschliesslich
+ * fuer dieses Feld relevant — sie wirken NICHT auf die Kurszahl selbst, ausser
+ * eine Saison ist vollstaendig auf 0 Wochen gesetzt (dann kann dort real kein
+ * Kurs stattfinden, siehe `kurseImJahr`).
  */
 
 import type { Rechtsgroessen } from './konstanten';
 import { nettoAusBrutto } from './steuer/umsatzsteuer';
-import type { Euro, Kursprodukt, ProduktErgebnis, Quote, Stunden } from './typen';
+import type { Euro, Kursprodukt, ProduktErgebnis, Quote, StummGrund, Stunden } from './typen';
 
 /** Wasserzeit eines einzelnen Kursdurchlaufs in Stunden. */
 export function wasserzeitJeKurs(produkt: Kursprodukt): Stunden {
@@ -42,23 +49,59 @@ export function erloesJeKurs(produkt: Kursprodukt): Euro {
   return produkt.teilnehmerJeKurs * produkt.auslastungsgrad * preis;
 }
 
+/** Anteil des Jahres (0..1), in dem das Produkt bereits gestartet ist. */
+function aktiverJahresanteil(produkt: Kursprodukt, jahrIndex: number): Quote {
+  const jahresStart = jahrIndex * 12;
+  const jahresEnde = jahresStart + 12;
+  const aktivAb = Math.max(produkt.abMonat, jahresStart);
+  const aktiveMonate = Math.min(12, Math.max(0, jahresEnde - aktivAb));
+  return aktiveMonate / 12;
+}
+
 /** Anzahl der Kursdurchlaeufe im Jahr, begrenzt durch Saison und Startmonat. */
 export function kurseImJahr(
   produkt: Kursprodukt,
   jahrIndex: number,
   hallenbadVerfuegbar: boolean,
+  aktiveWochenFreibad = 1,
+  aktiveWochenHalle = 1,
 ): number {
   if (!produkt.aktiv) return 0;
   if ((produkt.saison === 'ganzjahr' || produkt.saison === 'halle') && !hallenbadVerfuegbar) {
     return 0;
   }
+  // Eine Saison mit 0 aktiven Wochen kann real keinen Kurs tragen — unabhaengig
+  // vom Hallenbadzugang, der nur ueber "ganzjahr"/"halle" entscheidet.
+  if (produkt.saison === 'freibad' && aktiveWochenFreibad <= 0) return 0;
+  if (produkt.saison === 'halle' && aktiveWochenHalle <= 0) return 0;
+  if (produkt.saison === 'ganzjahr' && aktiveWochenFreibad <= 0 && aktiveWochenHalle <= 0) return 0;
 
-  const jahresStart = jahrIndex * 12;
-  const jahresEnde = jahresStart + 12;
-  const aktivAb = Math.max(produkt.abMonat, jahresStart);
-  const aktiveMonate = Math.min(12, Math.max(0, jahresEnde - aktivAb));
+  return produkt.zyklenProJahr * aktiverJahresanteil(produkt, jahrIndex);
+}
 
-  return produkt.zyklenProJahr * (aktiveMonate / 12);
+/**
+ * Grund, warum ein Produkt in diesem Jahr keinen Erloes liefert — dieselben
+ * Gates wie `kurseImJahr`, aber als benanntes Ergebnis statt einer blossen 0.
+ * `null` heisst: das Produkt traegt bei (Kurszahl > 0).
+ */
+export function ermittleStummGrund(
+  produkt: Kursprodukt,
+  jahrIndex: number,
+  hallenbadVerfuegbar: boolean,
+  aktiveWochenFreibad = 1,
+  aktiveWochenHalle = 1,
+): StummGrund {
+  if (!produkt.aktiv) return 'inaktiv';
+  if (aktiverJahresanteil(produkt, jahrIndex) <= 0) return 'vor_startmonat';
+  if ((produkt.saison === 'ganzjahr' || produkt.saison === 'halle') && !hallenbadVerfuegbar) {
+    return 'kein_hallenbad';
+  }
+  if (produkt.saison === 'freibad' && aktiveWochenFreibad <= 0) return 'ausserhalb_saison';
+  if (produkt.saison === 'halle' && aktiveWochenHalle <= 0) return 'ausserhalb_saison';
+  if (produkt.saison === 'ganzjahr' && aktiveWochenFreibad <= 0 && aktiveWochenHalle <= 0) {
+    return 'ausserhalb_saison';
+  }
+  return null;
 }
 
 /**
@@ -74,6 +117,8 @@ export function berechneProdukt(eingabe: {
   ausfallquote: Quote;
   ausfallMindertErloes: boolean;
   hallenbadVerfuegbar: boolean;
+  aktiveWochenFreibad?: number;
+  aktiveWochenHalle?: number;
   rg: Rechtsgroessen;
 }): ProduktErgebnis {
   const {
@@ -85,10 +130,12 @@ export function berechneProdukt(eingabe: {
     ausfallquote,
     ausfallMindertErloes,
     hallenbadVerfuegbar,
+    aktiveWochenFreibad = 1,
+    aktiveWochenHalle = 1,
     rg,
   } = eingabe;
 
-  const kurse = kurseImJahr(produkt, jahrIndex, hallenbadVerfuegbar);
+  const kurse = kurseImJahr(produkt, jahrIndex, hallenbadVerfuegbar, aktiveWochenFreibad, aktiveWochenHalle);
   const parallel = produkt.kurseParallelJeZyklus;
   const zeitJeKurs = wasserzeitJeKurs(produkt);
 
@@ -125,5 +172,6 @@ export function berechneProdukt(eingabe: {
     anzahlKurseProJahr: kurse,
     durchfuehrung: produkt.durchfuehrung,
     saison: produkt.saison,
+    stummGrund: ermittleStummGrund(produkt, jahrIndex, hallenbadVerfuegbar, aktiveWochenFreibad, aktiveWochenHalle),
   };
 }
