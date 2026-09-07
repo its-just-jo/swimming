@@ -8,7 +8,7 @@
  * Min/Max, Kurzhilfe und Auszeichnung als Schaetzwert oder Rechtsgroesse").
  */
 
-import type { Herkunft } from '../model/typen';
+import type { Herkunft, Szenario } from '../model/typen';
 
 export type FeldTyp = 'zahl' | 'prozent' | 'bool' | 'text' | 'select';
 
@@ -23,6 +23,26 @@ export interface Feldkonfiguration {
   readonly herkunft: Herkunft;
   readonly typ: FeldTyp;
   readonly optionen?: readonly { readonly wert: string; readonly label: string }[];
+  /**
+   * Optionales Sichtbarkeitspraedikat (design.md 7): liefert `false`, wenn das
+   * Feld das Ergebnis nachweislich nicht veraendern kann, weil ein anderer
+   * Schalter es wirkungslos macht. `zeile` ist das Objekt, an das dieses Feld
+   * gebunden ist — bei Skalarfeldern z. B. `szenario.anstellung`, bei
+   * Array-Feldern das jeweilige Produkt/die jeweilige Kostenposition.
+   * Ausgeblendet heisst nicht geloescht: der Wert bleibt erhalten.
+   */
+  readonly sichtbarWenn?: (szenario: Szenario, zeile: Record<string, unknown>) => boolean;
+  /** Gedaempfter Hinweistext, wenn ein wirkungsloses Feld eingeblendet wird, z. B. "wirkt erst bei Rechtsform Gewerbe". */
+  readonly sichtbarHinweis?: string;
+}
+
+/** Haengt ein Sichtbarkeitspraedikat samt Hinweistext an eine bestehende Feldkonfiguration an. */
+function bedingt(
+  konfig: Feldkonfiguration,
+  sichtbarWenn: (szenario: Szenario, zeile: Record<string, unknown>) => boolean,
+  sichtbarHinweis: string,
+): Feldkonfiguration {
+  return { ...konfig, sichtbarWenn, sichtbarHinweis };
 }
 
 function schaetz(
@@ -69,13 +89,21 @@ export const ANSTELLUNG_FELDER: readonly Feldkonfiguration[] = [
   ]),
   schaetz('kirchensteuerpflichtig', 'Kirchensteuerpflichtig', '', 0, 1, 1, 'Bestimmt, ob Kirchensteuer auf die Einkommensteuer erhoben wird.', 'bool'),
   schaetz('kinderfreibetraege', 'Kinderfreibetraege', 'Anzahl', 0, 10, 1, 'Anzahl voller Kinderfreibetraege (beide Elternteile).'),
-  schaetz('kinderlosZuschlagPflege', 'Kinderlosenzuschlag Pflege', '', 0, 1, 1, '§ 55 SGB XI, traegt der Beschaeftigte allein, ab 23 Jahren ohne Kinder.', 'bool'),
+  bedingt(
+    schaetz('kinderlosZuschlagPflege', 'Kinderlosenzuschlag Pflege', '', 0, 1, 1, '§ 55 SGB XI, traegt der Beschaeftigte allein, ab 23 Jahren ohne Kinder.', 'bool'),
+    (_s, z) => z['kinderfreibetraege'] === 0,
+    'wirkt erst ohne Kinderfreibetraege',
+  ),
   recht('kvStatus', 'Krankenversicherungsstatus', '', 0, 0, 0, 'Entscheidet, wie Nebeneinkuenfte aus Selbststaendigkeit beitragsrechtlich behandelt werden.', 'select', [
     { wert: 'gkv_pflicht', label: 'GKV pflichtversichert' },
     { wert: 'gkv_freiwillig', label: 'GKV freiwillig versichert' },
     { wert: 'pkv', label: 'Privat versichert (PKV)' },
   ]),
-  schaetz('pkvBeitragProMonat', 'PKV-Beitrag pro Monat', '€/Monat', 0, 3_000, 10, 'Nur relevant bei PKV-Status.'),
+  bedingt(
+    schaetz('pkvBeitragProMonat', 'PKV-Beitrag pro Monat', '€/Monat', 0, 3_000, 10, 'Nur relevant bei PKV-Status.'),
+    (_s, z) => z['kvStatus'] === 'pkv',
+    'wirkt erst bei Krankenversicherungsstatus "Privat versichert (PKV)"',
+  ),
   schaetz('wochenstundenVollzeit', 'Wochenstunden Vollzeit', 'h/Woche', 20, 48, 1, 'Referenzstundenzahl fuer die Wochenbelastung.'),
 ];
 
@@ -83,9 +111,17 @@ export const WASSER_FELDER: readonly Feldkonfiguration[] = [
   schaetz('wasserstundenProWoche', 'Wasserstunden pro Woche', 'h/Woche', 0, 40, 0.5, 'Eigene Unterrichtsstunden im Wasser, ohne Vor-/Nachbereitung.'),
   schaetz('davonSamstag', 'davon Samstag', 'h/Woche', 0, 40, 0.5, 'Reines Datenfeld ohne Rechenwirkung — eigene Kennzahl "Wochenendbelastung" vorgeschlagen, aber offen (ARCHITEKTUR.md 1.7).'),
   schaetz('aktiveWochenFreibad', 'Aktive Wochen Freibad', 'Wochen/Jahr', 0, 26, 1, 'Anzahl Wochen mit Freibadbetrieb (Saison Mai–September).'),
-  schaetz('aktiveWochenHalle', 'Aktive Wochen Halle', 'Wochen/Jahr', 0, 52, 1, 'Anzahl Wochen mit Hallenbadbetrieb.'),
+  bedingt(
+    schaetz('aktiveWochenHalle', 'Aktive Wochen Halle', 'Wochen/Jahr', 0, 52, 1, 'Anzahl Wochen mit Hallenbadbetrieb.'),
+    (_s, z) => Boolean(z['hallenbadzugang']),
+    'wirkt erst mit Hallenbadzugang',
+  ),
   schaetz('hallenbadzugang', 'Hallenbadzugang vorhanden', '', 0, 1, 1, 'Ohne Zugang liefern Ganzjahres- und Hallenprodukte keinen Erloes.', 'bool'),
-  schaetz('hallenbadAbMonat', 'Hallenbadzugang ab Monat', 'Monat', 0, 120, 1, 'Simulationsmonat, ab dem der Hallenbadzugang besteht (0 = von Anfang an).'),
+  bedingt(
+    schaetz('hallenbadAbMonat', 'Hallenbadzugang ab Monat', 'Monat', 0, 120, 1, 'Simulationsmonat, ab dem der Hallenbadzugang besteht (0 = von Anfang an).'),
+    (_s, z) => Boolean(z['hallenbadzugang']),
+    'wirkt erst mit Hallenbadzugang',
+  ),
   schaetz('ausfallquote', 'Ausfallquote', '', 0, 0.5, 0.01, 'Anteil ausfallender Termine, z. B. durch Krankheit oder Bad-Sperrung.', 'prozent'),
   schaetz('ausfallWirkung', 'Wirkung der Ausfallquote', '', 0, 0, 0, 'Standardmaessig mindert die Ausfallquote Kapazitaet UND Erloes.', 'select', [
     { wert: 'nur_kapazitaet', label: 'Nur Kapazitaet' },
@@ -105,22 +141,54 @@ export const STEUER_FELDER: readonly Feldkonfiguration[] = [
     { wert: 'freiberuflich', label: 'Freiberuflich' },
     { wert: 'gewerbe', label: 'Gewerbe' },
   ]),
-  recht('gewerbesteuerHebesatz', 'Gewerbesteuer-Hebesatz', '%', 0, 900, 5, 'Gemeindespezifisch — Platzhalter, bei der Gemeinde erfragen.'),
+  bedingt(
+    recht('gewerbesteuerHebesatz', 'Gewerbesteuer-Hebesatz', '%', 0, 900, 5, 'Gemeindespezifisch — Platzhalter, bei der Gemeinde erfragen.'),
+    (_s, z) => z['rechtsform'] === 'gewerbe',
+    'wirkt erst bei Rechtsform Gewerbe',
+  ),
   schaetz('drvPflicht', 'Rentenversicherungspflicht (§ 2 SGB VI)', '', 0, 1, 1, 'Selbststaendige Lehrer sind grundsaetzlich rentenversicherungspflichtig.', 'bool'),
   schaetz('drvBefreiungExistenzgruender', 'Existenzgruenderbefreiung nutzen', '', 0, 1, 1, '§ 6 Abs. 1a SGB VI, befristet.', 'bool'),
-  schaetz('drvBefreiungBisMonat', 'Befreiung bis Monat', 'Monat', 0, 60, 1, 'Ende der Existenzgruenderbefreiung (i. d. R. 36 Monate).'),
+  bedingt(
+    schaetz('drvBefreiungBisMonat', 'Befreiung bis Monat', 'Monat', 0, 60, 1, 'Ende der Existenzgruenderbefreiung (i. d. R. 36 Monate).'),
+    (_s, z) => Boolean(z['drvBefreiungExistenzgruender']),
+    'wirkt erst bei aktiver Existenzgruenderbefreiung',
+  ),
   schaetz('uebungsleiterpauschale', 'Uebungsleiterpauschale nutzen', '', 0, 1, 1, '§ 3 Nr. 26 EStG — mit eigenen Kursprodukten NICHT vereinbar (siehe Warnungen).', 'bool'),
 ];
 
 export const LEHRE_FELDER: readonly Feldkonfiguration[] = [
   schaetz('lehrauftragAktiv', 'Lehrauftrag aktiv', '', 0, 1, 1, 'Selbststaendige Einkuenfte nach § 18 EStG, gemeinsam veranlagt.', 'bool'),
-  schaetz('lvsJeSemester', 'LVS je Semester', 'LVS', 0, 20, 1, 'Lehrveranstaltungsstunden je Semester.'),
-  schaetz('satzJeLvs', 'Satz je LVS', '€', 0, 200, 1, 'Honorar je Lehrveranstaltungsstunde.'),
-  schaetz('startmonat', 'Startmonat', 'Monat', 0, 120, 1, 'Simulationsmonat, ab dem der Lehrauftrag beginnt.'),
+  bedingt(
+    schaetz('lvsJeSemester', 'LVS je Semester', 'LVS', 0, 20, 1, 'Lehrveranstaltungsstunden je Semester.'),
+    (_s, z) => Boolean(z['lehrauftragAktiv']),
+    'wirkt erst bei aktivem Lehrauftrag',
+  ),
+  bedingt(
+    schaetz('satzJeLvs', 'Satz je LVS', '€', 0, 200, 1, 'Honorar je Lehrveranstaltungsstunde.'),
+    (_s, z) => Boolean(z['lehrauftragAktiv']),
+    'wirkt erst bei aktivem Lehrauftrag',
+  ),
+  bedingt(
+    schaetz('startmonat', 'Startmonat', 'Monat', 0, 120, 1, 'Simulationsmonat, ab dem der Lehrauftrag beginnt.'),
+    (_s, z) => Boolean(z['lehrauftragAktiv']),
+    'wirkt erst bei aktivem Lehrauftrag',
+  ),
   schaetz('professurAktiv', 'Professurpfad aktiv', '', 0, 1, 1, 'Ersetzt ab dem Startjahr die bisherige Anstellung vollstaendig.', 'bool'),
-  schaetz('professurBruttoProJahr', 'Professur-Brutto pro Jahr', '€/Jahr', 0, 200_000, 500, 'Bruttojahresgehalt der Professur. Ersetzt ab dem Startjahr die bisherige Anstellung.'),
-  schaetz('professurBeschaeftigungsgrad', 'Professur-Beschaeftigungsgrad', '', 0, 1, 0.05, 'Umfang der Professur. 1,0 = volle Stelle.', 'prozent'),
-  schaetz('professurStartjahr', 'Professur-Startjahr', 'Jahr (Index)', 0, 20, 1, '0 = erstes Simulationsjahr.'),
+  bedingt(
+    schaetz('professurBruttoProJahr', 'Professur-Brutto pro Jahr', '€/Jahr', 0, 200_000, 500, 'Bruttojahresgehalt der Professur. Ersetzt ab dem Startjahr die bisherige Anstellung.'),
+    (_s, z) => Boolean(z['professurAktiv']),
+    'wirkt erst bei aktivem Professurpfad',
+  ),
+  bedingt(
+    schaetz('professurBeschaeftigungsgrad', 'Professur-Beschaeftigungsgrad', '', 0, 1, 0.05, 'Umfang der Professur. 1,0 = volle Stelle.', 'prozent'),
+    (_s, z) => Boolean(z['professurAktiv']),
+    'wirkt erst bei aktivem Professurpfad',
+  ),
+  bedingt(
+    schaetz('professurStartjahr', 'Professur-Startjahr', 'Jahr (Index)', 0, 20, 1, '0 = erstes Simulationsjahr.'),
+    (_s, z) => Boolean(z['professurAktiv']),
+    'wirkt erst bei aktivem Professurpfad',
+  ),
 ];
 
 export const SIMULATION_FELDER: readonly Feldkonfiguration[] = [
@@ -145,9 +213,21 @@ export const PRODUKT_FELDER: readonly Feldkonfiguration[] = [
   schaetz('abrechnung', 'Abrechnung', '', 0, 0, 0, 'Bei Pauschale wirkt der Auslastungsgrad nicht auf den Erloes.', 'select', [
     { wert: 'je_teilnehmer', label: 'Je Teilnehmer' }, { wert: 'pauschale', label: 'Pauschale' },
   ]),
-  schaetz('teilnehmerJeKurs', 'Teilnehmer je Kurs', 'Personen', 0, 40, 1, 'Plaetze je Kurs. Mit Auslastung und Preis ergibt sich der Erloes.'),
-  schaetz('preisJeTeilnehmer', 'Preis je Teilnehmer', '€', 0, 2_000, 5, 'Bruttopreis fuer den gesamten Kurs, nicht je Einheit.'),
-  schaetz('pauschaleJeKurs', 'Pauschale je Kurs', '€', 0, 10_000, 50, 'Bruttopauschale je Kurs, unabhaengig von der Teilnehmerzahl. Die Auslastung wirkt hier nicht.'),
+  bedingt(
+    schaetz('teilnehmerJeKurs', 'Teilnehmer je Kurs', 'Personen', 0, 40, 1, 'Plaetze je Kurs. Mit Auslastung und Preis ergibt sich der Erloes.'),
+    (_s, z) => z['abrechnung'] === 'je_teilnehmer',
+    'wirkt erst bei Abrechnung "Je Teilnehmer"',
+  ),
+  bedingt(
+    schaetz('preisJeTeilnehmer', 'Preis je Teilnehmer', '€', 0, 2_000, 5, 'Bruttopreis fuer den gesamten Kurs, nicht je Einheit.'),
+    (_s, z) => z['abrechnung'] === 'je_teilnehmer',
+    'wirkt erst bei Abrechnung "Je Teilnehmer"',
+  ),
+  bedingt(
+    schaetz('pauschaleJeKurs', 'Pauschale je Kurs', '€', 0, 10_000, 50, 'Bruttopauschale je Kurs, unabhaengig von der Teilnehmerzahl. Die Auslastung wirkt hier nicht.'),
+    (_s, z) => z['abrechnung'] === 'pauschale',
+    'wirkt erst bei Abrechnung "Pauschale"',
+  ),
   schaetz('einheitenJeKurs', 'Einheiten je Kurs', 'Einheiten', 1, 30, 1, 'Anzahl der Termine eines Kursdurchlaufs. Bestimmt die Wasserzeit.'),
   schaetz('dauerJeEinheitMinuten', 'Dauer je Einheit', 'Minuten', 15, 180, 5, 'Dauer eines Termins. Kuerzere Termine erhoehen die Anfahrtszeit je Wasserstunde.'),
   schaetz('beckenflaeche', 'Beckenflaeche', 'Bahnen', 0.1, 5, 0.1, '1,0 = eine Bahn, wirkt als Faktor auf den Mietsatz.'),
@@ -159,17 +239,29 @@ export const PRODUKT_FELDER: readonly Feldkonfiguration[] = [
     { wert: 'freibad', label: 'Freibad' }, { wert: 'halle', label: 'Halle' }, { wert: 'ganzjahr', label: 'Ganzjahr' },
   ]),
   schaetz('zppFaehig', 'ZPP-faehig', '', 0, 1, 1, 'Zentrale Pruefstelle Praevention — ermoeglicht den ZPP-Preisaufschlag.', 'bool'),
-  schaetz('zppPreisaufschlag', 'ZPP-Preisaufschlag', '€', 0, 200, 5, 'Nur wirksam, wenn ZPP-faehig aktiv ist.'),
+  bedingt(
+    schaetz('zppPreisaufschlag', 'ZPP-Preisaufschlag', '€', 0, 200, 5, 'Nur wirksam, wenn ZPP-faehig aktiv ist.'),
+    (_s, z) => Boolean(z['zppFaehig']),
+    'wirkt erst wenn ZPP-faehig aktiv ist',
+  ),
   schaetz('durchfuehrung', 'Durchfuehrung', '', 0, 0, 0, 'Fremdlehrkraft-Stunden belasten das eigene Zeitbudget nicht.', 'select', [
     { wert: 'ich', label: 'Ich selbst' }, { wert: 'fremdlehrkraft', label: 'Fremdlehrkraft' },
   ]),
-  schaetz('honorarFremdlehrkraftJeStunde', 'Honorar Fremdlehrkraft', '€/h', 0, 100, 1, 'Nur bei Durchfuehrung "Fremdlehrkraft".'),
+  bedingt(
+    schaetz('honorarFremdlehrkraftJeStunde', 'Honorar Fremdlehrkraft', '€/h', 0, 100, 1, 'Nur bei Durchfuehrung "Fremdlehrkraft".'),
+    (_s, z) => z['durchfuehrung'] === 'fremdlehrkraft',
+    'wirkt erst bei Durchfuehrung "Fremdlehrkraft"',
+  ),
 ];
 
 export const FIXKOSTEN_FELDER: readonly Feldkonfiguration[] = [
   schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, 'Freier Name. Erscheint in Kursplan, Diagrammen und Warnungen.', 'text'),
   schaetz('betragProJahr', 'Betrag pro Jahr', '€/Jahr', 0, 50_000, 50, 'Jahresbetrag brutto. Mindert den Gewinn und damit die Steuerlast.'),
-  schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, 'Ob aus diesem Betrag Vorsteuer gezogen werden kann. Bei kommunaler Beckenmiete meist nicht.', 'bool'),
+  bedingt(
+    schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, 'Ob aus diesem Betrag Vorsteuer gezogen werden kann. Bei kommunaler Beckenmiete meist nicht.', 'bool'),
+    (s) => s.steuer.vorsteuerabzug,
+    'wirkt erst bei aktivem Vorsteuerabzug',
+  ),
   schaetz('indexiert', 'Mit Inflation indexiert', '', 0, 1, 1, 'Ob die Position mit der Inflation fortgeschrieben wird.', 'bool'),
 ];
 
@@ -177,7 +269,11 @@ export const INVESTITION_FELDER: readonly Feldkonfiguration[] = [
   schaetz('bezeichnung', 'Bezeichnung', '', 0, 0, 0, 'Freier Name. Erscheint in Kursplan, Diagrammen und Warnungen.', 'text'),
   schaetz('betrag', 'Betrag', '€', 0, 50_000, 50, 'Einmalbetrag. Wirkt als Ausgabe und mindert den Gewinn im Monat der Zahlung.'),
   schaetz('monat', 'Monat', 'Monat', 0, 120, 1, 'Simulationsmonat, in dem die Investition anfaellt.'),
-  schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, 'Ob aus diesem Betrag Vorsteuer gezogen werden kann. Bei kommunaler Beckenmiete meist nicht.', 'bool'),
+  bedingt(
+    schaetz('vorsteuerabzugsfaehig', 'Vorsteuerabzugsfaehig', '', 0, 1, 1, 'Ob aus diesem Betrag Vorsteuer gezogen werden kann. Bei kommunaler Beckenmiete meist nicht.', 'bool'),
+    (s) => s.steuer.vorsteuerabzug,
+    'wirkt erst bei aktivem Vorsteuerabzug',
+  ),
 ];
 
 export const FAHRTKOSTEN_FELDER: readonly Feldkonfiguration[] = [

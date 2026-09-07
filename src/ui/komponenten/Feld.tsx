@@ -26,19 +26,28 @@ export interface FeldProps {
   readonly konfig: Feldkonfiguration;
   readonly wert: unknown;
   readonly onAendern: (wert: unknown) => void;
+  /** Wird nur gesetzt, wenn ein Abschnitt seine wirkungslosen Felder eingeblendet hat (design.md 7.3). */
+  readonly gedaempft?: boolean;
 }
 
-export function Feld({ konfig, wert, onAendern }: FeldProps) {
+function GedaempftHinweis({ konfig, gedaempft }: { readonly konfig: Feldkonfiguration; readonly gedaempft: boolean | undefined }) {
+  if (!gedaempft || !konfig.sichtbarHinweis) return null;
+  return <span className="feld__hinweis">{konfig.sichtbarHinweis}</span>;
+}
+
+export function Feld({ konfig, wert, onAendern, gedaempft }: FeldProps) {
   const kennung = `feld-${konfig.schluessel}-${Math.random().toString(36).slice(2, 7)}`;
+  const klasse = gedaempft ? 'feld feld--gedaempft' : 'feld';
 
   if (konfig.typ === 'bool') {
     return (
-      <label className="feld feld--bool">
+      <label className={`${klasse} feld--bool`}>
         <input type="checkbox" checked={Boolean(wert)} onChange={(e) => onAendern(e.target.checked)} />
-        <span>
+        <span className="feld__label">
           {konfig.label}
           {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" aria-label="Rechtsgroesse"> §</span>}
         </span>
+        <GedaempftHinweis konfig={konfig} gedaempft={gedaempft} />
         <Hilfe label={konfig.label} text={konfig.hilfe} />
       </label>
     );
@@ -46,12 +55,13 @@ export function Feld({ konfig, wert, onAendern }: FeldProps) {
 
   if (konfig.typ === 'select') {
     return (
-      <label className="feld">
+      <label className={klasse}>
         <span className="feld__label">
           {konfig.label}
           {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" aria-label="Rechtsgroesse"> §</span>}
           <Hilfe label={konfig.label} text={konfig.hilfe} />
         </span>
+        <GedaempftHinweis konfig={konfig} gedaempft={gedaempft} />
         <select value={String(wert)} onChange={(e) => onAendern(e.target.value)}>
           {(konfig.optionen ?? []).map((o) => (
             <option key={o.wert} value={o.wert}>
@@ -65,29 +75,34 @@ export function Feld({ konfig, wert, onAendern }: FeldProps) {
 
   if (konfig.typ === 'text') {
     return (
-      <label className="feld">
+      <label className={klasse}>
         <span className="feld__label">
           {konfig.label}
           <Hilfe label={konfig.label} text={konfig.hilfe} />
         </span>
+        <GedaempftHinweis konfig={konfig} gedaempft={gedaempft} />
         <input type="text" value={String(wert ?? '')} onChange={(e) => onAendern(e.target.value)} />
       </label>
     );
   }
 
   // 'zahl' | 'prozent'
-  return <ZahlFeld id={kennung} konfig={konfig} wert={typeof wert === 'number' ? wert : 0} onAendern={onAendern} />;
+  return (
+    <ZahlFeld id={kennung} konfig={konfig} wert={typeof wert === 'number' ? wert : 0} onAendern={onAendern} gedaempft={gedaempft} />
+  );
 }
 
 function ZahlFeld({
   konfig,
   wert,
   onAendern,
+  gedaempft,
 }: {
   readonly id: string;
   readonly konfig: Feldkonfiguration;
   readonly wert: number;
   readonly onAendern: (wert: number) => void;
+  readonly gedaempft?: boolean | undefined;
 }) {
   const [text, setText] = useState(() => zahlZuText(wert));
 
@@ -110,12 +125,13 @@ function ZahlFeld({
   }
 
   return (
-    <label className="feld">
+    <label className={gedaempft ? 'feld feld--gedaempft' : 'feld'}>
       <span className="feld__label">
         {konfig.label}
         {konfig.herkunft === 'rechtsgroesse' && <span className="feld__marke" aria-label="Rechtsgroesse"> §</span>}
         <Hilfe label={konfig.label} text={konfig.hilfe} />
       </span>
+      <GedaempftHinweis konfig={konfig} gedaempft={gedaempft} />
       <span className="feld__eingabe">
         <input
           type="text"

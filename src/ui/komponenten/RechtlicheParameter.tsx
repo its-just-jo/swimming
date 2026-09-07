@@ -6,6 +6,7 @@ import type { Dispatch } from 'react';
 import { RECHTSGROESSEN_2025 } from '../../model/konstanten';
 import type { RechtlicheUeberschreibungen } from '../../model/typen';
 import type { Aktion } from '../../state/szenarioReducer';
+import { UmschalterZeile } from './Formulare';
 
 const BESCHRIFTUNGEN: Record<string, string> = {
   grundfreibetrag: 'Grundfreibetrag (EUR)',
@@ -44,16 +45,38 @@ function istZahl(wert: unknown): wert is number {
   return typeof wert === 'number';
 }
 
+/** Einziges bedingt sichtbares Feld dieser Ansicht (design.md 7.2): wirkt nur bei Kirchensteuerpflicht. */
+const BEDINGT_SICHTBAR: Record<string, { readonly wennFeld: string; readonly hinweis: string }> = {
+  kirchensteuersatz: { wennFeld: 'kirchensteuerpflichtig', hinweis: 'wirkt erst bei Kirchensteuerpflicht' },
+};
+
 export function RechtlicheParameter({
   ueberschreibungen,
+  kirchensteuerpflichtig,
   dispatch,
+  eingeblendet,
+  onEinblenden,
 }: {
   readonly ueberschreibungen: RechtlicheUeberschreibungen;
+  readonly kirchensteuerpflichtig: boolean;
   readonly dispatch: Dispatch<Aktion>;
+  readonly eingeblendet: boolean;
+  readonly onEinblenden: () => void;
 }) {
-  const felder = Object.entries(RECHTSGROESSEN_2025).filter(
+  const alleFelder = Object.entries(RECHTSGROESSEN_2025).filter(
     ([schluessel, wert]) => istZahl(wert) && !NICHT_UEBERSCHREIBBAR.has(schluessel),
   ) as readonly [string, number][];
+
+  const bedingung: Record<string, boolean> = { kirchensteuerpflichtig };
+  const sichtbar = alleFelder.filter(([schluessel]) => {
+    const bedingt = BEDINGT_SICHTBAR[schluessel];
+    return !bedingt || bedingung[bedingt.wennFeld];
+  });
+  const ausgeblendet = alleFelder.filter(([schluessel]) => {
+    const bedingt = BEDINGT_SICHTBAR[schluessel];
+    return bedingt && !bedingung[bedingt.wennFeld];
+  });
+  const anzuzeigen = eingeblendet ? alleFelder : sichtbar;
 
   return (
     <div className="feld-raster">
@@ -61,10 +84,11 @@ export function RechtlicheParameter({
         Rechtsstand 2025. Jeder Wert ist vor Nutzung gegen die Primaerquelle zu pruefen (siehe{' '}
         <code>konstanten.ts</code>). Leer lassen = Standardwert gilt.
       </p>
-      {felder.map(([schluessel, standard]) => {
+      {anzuzeigen.map(([schluessel, standard]) => {
         const aktuell = ueberschreibungen[schluessel];
+        const gedaempft = eingeblendet && Boolean(BEDINGT_SICHTBAR[schluessel]);
         return (
-          <label className="feld" key={schluessel}>
+          <label className={gedaempft ? 'feld feld--gedaempft' : 'feld'} key={schluessel}>
             <span className="feld__label">
               {BESCHRIFTUNGEN[schluessel] ?? schluessel}
               <span className="feld__marke" aria-label="Rechtsgroesse">
@@ -72,6 +96,7 @@ export function RechtlicheParameter({
                 §
               </span>
             </span>
+            {gedaempft && <span className="feld__hinweis">{BEDINGT_SICHTBAR[schluessel]?.hinweis}</span>}
             <span className="feld__eingabe">
               <input
                 type="text"
@@ -99,6 +124,7 @@ export function RechtlicheParameter({
           </label>
         );
       })}
+      <UmschalterZeile anzahl={ausgeblendet.length} eingeblendet={eingeblendet} onUmschalten={onEinblenden} />
     </div>
   );
 }

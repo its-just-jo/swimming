@@ -651,6 +651,8 @@ export interface AppEinstellungen {
   readonly vergleichsSzenarien: readonly Id[];
   readonly aufgeklappteAbschnitte: readonly string[];
   readonly farbschema: Farbschema;
+  /** Kennungen der Abschnitte, in denen wirkungslose Felder eingeblendet sind (design.md 7.3). */
+  readonly eingeblendeteAbschnitte: readonly string[];
 }
 
 export type SpeicherModus = 'localstorage' | 'nur_speicher';

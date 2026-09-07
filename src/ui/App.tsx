@@ -57,6 +57,15 @@ export function App() {
   const [ausgewaehlteKennzahl, setAusgewaehlteKennzahl] = useState<Kennzahl | null>(null);
   const [indexVersion, setIndexVersion] = useState(0);
   const [farbschema, setFarbschema] = useState<Farbschema>(() => ladeEinstellungen()?.farbschema ?? 'system');
+  const [eingeblendeteAbschnitte, setEingeblendeteAbschnitte] = useState<readonly string[]>(
+    () => ladeEinstellungen()?.eingeblendeteAbschnitte ?? [],
+  );
+
+  function abschnittUmschalten(kennung: string) {
+    setEingeblendeteAbschnitte((bisher) =>
+      bisher.includes(kennung) ? bisher.filter((k) => k !== kennung) : [...bisher, kennung],
+    );
+  }
 
   const ergebnis = useMemo(() => berechneSzenario(zustand.gegenwart), [zustand.gegenwart]);
   const jahrSicher = Math.min(jahrIndex, ergebnis.jahre.length - 1);
@@ -85,8 +94,9 @@ export function App() {
       vergleichsSzenarien: [],
       aufgeklappteAbschnitte: [],
       farbschema,
+      eingeblendeteAbschnitte,
     });
-  }, [zustand.gegenwart.id, farbschema]);
+  }, [zustand.gegenwart.id, farbschema, eingeblendeteAbschnitte]);
 
   useEffect(() => {
     // 'system' entfernt das Attribut: die Medienabfrage in stil.css greift dann wieder.
@@ -166,7 +176,12 @@ export function App() {
             indexVersion={indexVersion}
             onGeaendert={() => setIndexVersion((v) => v + 1)}
           />
-          <EingabeSpalte szenario={zustand.gegenwart} dispatch={dispatch} />
+          <EingabeSpalte
+            szenario={zustand.gegenwart}
+            dispatch={dispatch}
+            eingeblendeteAbschnitte={eingeblendeteAbschnitte}
+            onAbschnittUmschalten={abschnittUmschalten}
+          />
         </section>
 
         <section className="spalte-ergebnisse" aria-label="Ergebnisse">

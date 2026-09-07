@@ -19,11 +19,30 @@ import {
 import { ArrayFelder, SkalarFelder } from './Formulare';
 import { RechtlicheParameter } from './RechtlicheParameter';
 
-export function EingabeSpalte({ szenario, dispatch }: { readonly szenario: Szenario; readonly dispatch: Dispatch<Aktion> }) {
+export interface EingabeSpalteProps {
+  readonly szenario: Szenario;
+  readonly dispatch: Dispatch<Aktion>;
+  readonly eingeblendeteAbschnitte: readonly string[];
+  readonly onAbschnittUmschalten: (kennung: string) => void;
+}
+
+export function EingabeSpalte({ szenario, dispatch, eingeblendeteAbschnitte, onAbschnittUmschalten }: EingabeSpalteProps) {
+  function istEingeblendet(kennung: string): boolean {
+    return eingeblendeteAbschnitte.includes(kennung);
+  }
+
   return (
     <>
       <Abschnitt titel="Anstellung" kennung="anstellung">
-        <SkalarFelder basisPfad="anstellung" objekt={szenario.anstellung} felder={ANSTELLUNG_FELDER} dispatch={dispatch} />
+        <SkalarFelder
+          basisPfad="anstellung"
+          objekt={szenario.anstellung}
+          felder={ANSTELLUNG_FELDER}
+          dispatch={dispatch}
+          szenario={szenario}
+          eingeblendet={istEingeblendet('anstellung')}
+          onEinblenden={() => onAbschnittUmschalten('anstellung')}
+        />
         <div className="stufen-auswahl">
           {[1.0, 0.8, 0.6, 0.5, 0.0].map((stufe) => (
             <button
@@ -39,7 +58,15 @@ export function EingabeSpalte({ szenario, dispatch }: { readonly szenario: Szena
       </Abschnitt>
 
       <Abschnitt titel="Wasserkapazitaet" kennung="wasser">
-        <SkalarFelder basisPfad="wasser" objekt={szenario.wasser} felder={WASSER_FELDER} dispatch={dispatch} />
+        <SkalarFelder
+          basisPfad="wasser"
+          objekt={szenario.wasser}
+          felder={WASSER_FELDER}
+          dispatch={dispatch}
+          szenario={szenario}
+          eingeblendet={istEingeblendet('wasser')}
+          onEinblenden={() => onAbschnittUmschalten('wasser')}
+        />
       </Abschnitt>
 
       <Abschnitt titel="Kursprodukte" kennung="produkte">
@@ -53,6 +80,9 @@ export function EingabeSpalte({ szenario, dispatch }: { readonly szenario: Szena
           beschriftung={(item) => (item as { bezeichnung: string }).bezeichnung}
           hinzufuegenBeschriftung="Produkt hinzufuegen"
           leerHinweis="Noch keine Kursprodukte."
+          szenario={szenario}
+          eingeblendet={istEingeblendet('produkte')}
+          onEinblenden={() => onAbschnittUmschalten('produkte')}
         />
       </Abschnitt>
 
@@ -67,9 +97,20 @@ export function EingabeSpalte({ szenario, dispatch }: { readonly szenario: Szena
           beschriftung={(item) => (item as { bezeichnung: string }).bezeichnung}
           hinzufuegenBeschriftung="Position hinzufuegen"
           leerHinweis="Keine Fixkostenpositionen."
+          szenario={szenario}
+          eingeblendet={istEingeblendet('fixkosten')}
+          onEinblenden={() => onAbschnittUmschalten('fixkosten')}
         />
         <h4 className="unterabschnitt-titel">Fahrtkosten</h4>
-        <SkalarFelder basisPfad="fahrtkosten" objekt={szenario.fahrtkosten} felder={FAHRTKOSTEN_FELDER} dispatch={dispatch} />
+        <SkalarFelder
+          basisPfad="fahrtkosten"
+          objekt={szenario.fahrtkosten}
+          felder={FAHRTKOSTEN_FELDER}
+          dispatch={dispatch}
+          szenario={szenario}
+          eingeblendet={istEingeblendet('fixkosten')}
+          onEinblenden={() => onAbschnittUmschalten('fixkosten')}
+        />
       </Abschnitt>
 
       <Abschnitt titel="Einmalinvestitionen" kennung="investitionen">
@@ -83,23 +124,56 @@ export function EingabeSpalte({ szenario, dispatch }: { readonly szenario: Szena
           beschriftung={(item) => (item as { bezeichnung: string }).bezeichnung}
           hinzufuegenBeschriftung="Investition hinzufuegen"
           leerHinweis="Keine Investitionen geplant."
+          szenario={szenario}
+          eingeblendet={istEingeblendet('investitionen')}
+          onEinblenden={() => onAbschnittUmschalten('investitionen')}
         />
       </Abschnitt>
 
       <Abschnitt titel="Steuer- und Sozialversicherungsschalter" kennung="steuer">
-        <SkalarFelder basisPfad="steuer" objekt={szenario.steuer} felder={STEUER_FELDER} dispatch={dispatch} />
+        <SkalarFelder
+          basisPfad="steuer"
+          objekt={szenario.steuer}
+          felder={STEUER_FELDER}
+          dispatch={dispatch}
+          szenario={szenario}
+          eingeblendet={istEingeblendet('steuer')}
+          onEinblenden={() => onAbschnittUmschalten('steuer')}
+        />
       </Abschnitt>
 
       <Abschnitt titel="Lehre" kennung="lehre">
-        <SkalarFelder basisPfad="lehre" objekt={szenario.lehre} felder={LEHRE_FELDER} dispatch={dispatch} />
+        <SkalarFelder
+          basisPfad="lehre"
+          objekt={szenario.lehre}
+          felder={LEHRE_FELDER}
+          dispatch={dispatch}
+          szenario={szenario}
+          eingeblendet={istEingeblendet('lehre')}
+          onEinblenden={() => onAbschnittUmschalten('lehre')}
+        />
       </Abschnitt>
 
       <Abschnitt titel="Simulationsparameter" kennung="simulation">
-        <SkalarFelder basisPfad="simulation" objekt={szenario.simulation} felder={SIMULATION_FELDER} dispatch={dispatch} />
+        <SkalarFelder
+          basisPfad="simulation"
+          objekt={szenario.simulation}
+          felder={SIMULATION_FELDER}
+          dispatch={dispatch}
+          szenario={szenario}
+          eingeblendet={istEingeblendet('simulation')}
+          onEinblenden={() => onAbschnittUmschalten('simulation')}
+        />
       </Abschnitt>
 
       <Abschnitt titel="Rechtliche Parameter" kennung="rechtliche-parameter" startOffen={false}>
-        <RechtlicheParameter ueberschreibungen={szenario.rechtlicheUeberschreibungen} dispatch={dispatch} />
+        <RechtlicheParameter
+          ueberschreibungen={szenario.rechtlicheUeberschreibungen}
+          kirchensteuerpflichtig={szenario.anstellung.kirchensteuerpflichtig}
+          dispatch={dispatch}
+          eingeblendet={istEingeblendet('rechtliche-parameter')}
+          onEinblenden={() => onAbschnittUmschalten('rechtliche-parameter')}
+        />
       </Abschnitt>
 
       <div className="zuruecksetzen-global">

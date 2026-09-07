@@ -298,6 +298,7 @@ table th {
 .abschnitt__pfeil { color: var(--text-2); width: 0.8em; display: inline-block; }
 .abschnitt__inhalt { padding: 0 var(--sp-3) var(--sp-3); }
 .abschnitt__hinweis { color: var(--text-2); font-size: 12px; line-height: 1.4; grid-column: 1 / -1; }
+.abschnitt__hinweis .knopf { margin-left: var(--sp-2); }
 
 .feld-raster {
   display: grid;
@@ -344,6 +345,22 @@ table th {
 
 .feld__einheit { color: var(--text-2); font-size: 12px; line-height: 1.4; white-space: nowrap; }
 .feld__vorschau { color: var(--text-2); font-size: 12px; line-height: 1.4; white-space: nowrap; }
+
+/* Wirkungslose, eingeblendete Felder (design.md 7.3): gedaempft statt versteckt. */
+.feld--gedaempft .feld__label { color: var(--text-3); }
+.feld--gedaempft input,
+.feld--gedaempft select {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-3);
+}
+
+.feld__hinweis {
+  color: var(--text-3);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.4;
+}
 
 .hilfe {
   position: relative;
